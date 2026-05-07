@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Food Tracker AI</title>
+<title>PlateIQ</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -73,9 +73,22 @@ header {
   font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
   padding: 8px 4px; border-radius: 12px; transition: color .2s; position: relative;
 }
-.tab-btn .tab-icon { font-size: 1.35rem; line-height: 1; transition: transform .2s; }
+.tab-btn .tab-icon {
+  font-size: 1.25rem; line-height: 1;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.10);
+  transition: transform .2s, background .2s, border-color .2s, box-shadow .2s;
+}
 .tab-btn.active { color: var(--primary); }
-.tab-btn.active .tab-icon { transform: scale(1.12); }
+.tab-btn.active .tab-icon {
+  transform: scale(1.08);
+  background: rgba(245,166,35,0.15);
+  border-color: rgba(245,166,35,0.45);
+  box-shadow: 0 0 10px rgba(245,166,35,0.25);
+}
 .tab-dot {
   position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
   width: 4px; height: 4px; border-radius: 2px; background: var(--primary);
@@ -364,7 +377,7 @@ header {
 <body>
 <div id="app">
   <header>
-    <div class="logo">Food <span>Tracker</span> AI</div>
+    <div class="logo">Plate<span>IQ</span></div>
     <button id="settings-btn" aria-label="Settings">⚙️</button>
   </header>
 
@@ -525,10 +538,10 @@ header {
   </div>
 
   <nav id="tab-bar">
-    <button class="tab-btn active" data-tab="analyze"><span class="tab-icon">📷</span>Analyze<span class="tab-dot"></span></button>
-    <button class="tab-btn" data-tab="log"><span class="tab-icon">📋</span>Log<span class="tab-dot"></span></button>
-    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span>Stats<span class="tab-dot"></span></button>
-    <button class="tab-btn" data-tab="advice"><span class="tab-icon">🤖</span>Advice<span class="tab-dot"></span></button>
+    <button class="tab-btn active" data-tab="analyze"><span class="tab-icon">🍽️</span>Analyze<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="log"><span class="tab-icon">📅</span>Log<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📈</span>Stats<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="advice"><span class="tab-icon">💡</span>Advice<span class="tab-dot"></span></button>
   </nav>
 </div>
 

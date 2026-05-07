@@ -5,397 +5,476 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Food Tracker AI</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg: #0f0f1a;
-    --surface: #1a1a2e;
-    --card: #242440;
-    --card2: #2e2e50;
-    --text: #e8e8f0;
-    --muted: #8888a8;
-    --primary: #f5a623;
-    --primary-dark: #c47d0a;
-    --protein: #4a90d9;
-    --carbs: #27ae60;
-    --fat: #e67e22;
-    --cal: #e74c3c;
-    --danger: #e74c3c;
-    --success: #27ae60;
-    --radius: 14px;
-    --tab-height: 64px;
-  }
+:root {
+  --bg: #0a0a14;
+  --surface: #12121f;
+  --card: #1c1c30;
+  --card2: #252540;
+  --border: rgba(255,255,255,.07);
+  --text: #f0f0f8;
+  --muted: #7070a0;
+  --primary: #f5a623;
+  --primary-dim: rgba(245,166,35,.15);
+  --protein: #5b9cf6;
+  --carbs: #34d399;
+  --fat: #fb923c;
+  --cal: #f87171;
+  --danger: #f87171;
+  --success: #34d399;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --tab-h: 68px;
+}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
+html, body { height: 100%; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow: hidden; }
 
-  /* ── Layout ── */
-  #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; position: relative; }
+/* ── App shell ── */
+#app { display: flex; flex-direction: column; height: 100%; max-width: 430px; margin: 0 auto; position: relative; }
 
-  header {
-    background: var(--surface);
-    padding: 14px 18px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-    flex-shrink: 0;
-    z-index: 10;
-  }
-  header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -.3px; }
-  header h1 span { color: var(--primary); }
+header {
+  padding: 16px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.logo { font-size: 1.1rem; font-weight: 800; letter-spacing: -.5px; }
+.logo span { color: var(--primary); }
 
-  #settings-btn {
-    background: none; border: none; color: var(--muted);
-    font-size: 1.3rem; cursor: pointer; padding: 4px;
-    transition: color .2s;
-  }
-  #settings-btn:hover { color: var(--text); }
+#settings-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: var(--card); color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1rem; transition: all .2s;
+}
+#settings-btn:hover { background: var(--card2); color: var(--text); }
 
-  #screens {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
+/* ── Screens ── */
+#screens { flex: 1; overflow: hidden; position: relative; }
 
-  .screen {
-    display: none;
-    height: 100%;
-    overflow-y: auto;
-    padding: 16px 14px calc(var(--tab-height) + 16px);
-  }
-  .screen.active { display: block; }
+.screen {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 20px 16px calc(var(--tab-h) + 20px);
+  opacity: 0; pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity .22s ease, transform .22s ease;
+  -webkit-overflow-scrolling: touch;
+}
+.screen.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-  /* ── Tab Bar ── */
-  #tab-bar {
-    position: fixed;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 100%; max-width: 480px;
-    height: var(--tab-height);
-    background: var(--surface);
-    border-top: 1px solid rgba(255,255,255,.07);
-    display: flex;
-    z-index: 100;
-  }
-  .tab-btn {
-    flex: 1; background: none; border: none;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 3px; cursor: pointer;
-    color: var(--muted);
-    font-size: .65rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .5px;
-    transition: color .2s;
-  }
-  .tab-btn .icon { font-size: 1.4rem; }
-  .tab-btn.active { color: var(--primary); }
+/* ── Tab bar ── */
+#tab-bar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  height: var(--tab-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 8px;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.tab-btn {
+  flex: 1; background: none; border: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; color: var(--muted);
+  font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  padding: 8px 4px; border-radius: 12px;
+  transition: color .2s, background .2s;
+  position: relative;
+}
+.tab-btn .tab-icon { font-size: 1.35rem; line-height: 1; transition: transform .2s; }
+.tab-btn.active { color: var(--primary); }
+.tab-btn.active .tab-icon { transform: scale(1.12); }
+.tab-dot {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 2px; background: var(--primary);
+  opacity: 0; transition: opacity .2s;
+}
+.tab-btn.active .tab-dot { opacity: 1; }
 
-  /* ── Cards ── */
-  .card {
-    background: var(--card);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 14px;
-  }
-  .card-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 12px; }
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.card-label {
+  font-size: .68rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--muted); margin-bottom: 14px;
+}
 
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 12px 20px; border-radius: 10px; border: none;
-    font-size: .95rem; font-weight: 600; cursor: pointer;
-    transition: opacity .2s, transform .1s;
-    text-align: center;
-  }
-  .btn:active { transform: scale(.97); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
-  .btn-primary { background: var(--primary); color: #000; width: 100%; }
-  .btn-secondary { background: var(--card2); color: var(--text); width: 100%; }
-  .btn-danger { background: rgba(231,76,60,.15); color: var(--danger); width: 100%; border: 1px solid rgba(231,76,60,.3); }
-  .btn-sm { padding: 7px 14px; font-size: .8rem; border-radius: 8px; }
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 15px 24px; border-radius: var(--radius-sm); border: none;
+  font-size: .95rem; font-weight: 700; cursor: pointer;
+  transition: opacity .18s, transform .12s;
+  width: 100%; text-align: center; letter-spacing: -.1px;
+}
+.btn:active { transform: scale(.96); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-primary {
+  background: linear-gradient(135deg, #f5a623 0%, #e8870a 100%);
+  color: #000; box-shadow: 0 4px 20px rgba(245,166,35,.35);
+}
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(245,166,35,.45); }
+.btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost { background: transparent; color: var(--primary); border: 1.5px solid rgba(245,166,35,.35); }
+.btn-danger { background: rgba(248,113,113,.12); color: var(--danger); border: 1px solid rgba(248,113,113,.25); }
 
-  /* ── Macros ── */
-  .macros { display: flex; gap: 8px; flex-wrap: wrap; }
-  .macro-pill {
-    padding: 4px 10px; border-radius: 20px;
-    font-size: .78rem; font-weight: 700;
-    letter-spacing: .3px;
-  }
-  .macro-pill.protein { background: rgba(74,144,217,.2); color: var(--protein); }
-  .macro-pill.carbs   { background: rgba(39,174,96,.2);  color: var(--carbs); }
-  .macro-pill.fat     { background: rgba(230,126,34,.2); color: var(--fat); }
-  .macro-pill.cal     { background: rgba(231,76,60,.2);  color: var(--cal); }
+/* ── Macro pills ── */
+.macros { display: flex; gap: 7px; flex-wrap: wrap; }
+.mpill {
+  padding: 5px 11px; border-radius: 20px;
+  font-size: .75rem; font-weight: 700; letter-spacing: .2px;
+}
+.mpill.protein { background: rgba(91,156,246,.15); color: var(--protein); }
+.mpill.carbs   { background: rgba(52,211,153,.15); color: var(--carbs); }
+.mpill.fat     { background: rgba(251,146,60,.15); color: var(--fat); }
+.mpill.cal     { background: rgba(248,113,113,.15); color: var(--cal); }
 
-  /* ── Progress bar ── */
-  .progress-wrap { margin-top: 8px; }
-  .progress-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 4px; }
-  .progress-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
-  .progress-fill.protein { background: var(--protein); }
-  .progress-fill.carbs   { background: var(--carbs); }
-  .progress-fill.fat     { background: var(--fat); }
-  .progress-fill.cal     { background: var(--primary); }
-  .progress-fill.over    { background: var(--danger); }
+/* ── Progress ── */
+.prog-row { margin-top: 10px; }
+.prog-meta { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-bottom: 5px; }
+.prog-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+.prog-fill.protein { background: linear-gradient(90deg, #3b82f6, #5b9cf6); }
+.prog-fill.carbs   { background: linear-gradient(90deg, #10b981, #34d399); }
+.prog-fill.fat     { background: linear-gradient(90deg, #f97316, #fb923c); }
+.prog-fill.cal     { background: linear-gradient(90deg, #f5a623, #fbbf24); }
+.prog-fill.over    { background: linear-gradient(90deg, #ef4444, #f87171); }
 
-  /* ── Spinner ── */
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(0,0,0,.25);
-    border-top-color: #000;
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-  }
-  .spinner.light { border-color: rgba(255,255,255,.2); border-top-color: var(--text); }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ── Spinner ── */
+.spinner { width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid rgba(0,0,0,.2); border-top-color: #000; animation: spin .65s linear infinite; }
+.spinner.light { border-color: rgba(255,255,255,.15); border-top-color: var(--text); }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Toast / Error ── */
-  #toast {
-    position: fixed; bottom: calc(var(--tab-height) + 12px);
-    left: 50%; transform: translateX(-50%);
-    background: var(--danger); color: #fff;
-    padding: 10px 18px; border-radius: 10px;
-    font-size: .85rem; font-weight: 600;
-    opacity: 0; pointer-events: none;
-    transition: opacity .3s;
-    z-index: 999; max-width: 360px; text-align: center;
-    white-space: pre-wrap;
-  }
-  #toast.success { background: var(--success); }
-  #toast.show { opacity: 1; }
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: calc(var(--tab-h) + 16px);
+  left: 50%; transform: translateX(-50%) translateY(10px);
+  background: var(--card2); color: var(--text);
+  padding: 12px 20px; border-radius: 30px;
+  font-size: .85rem; font-weight: 600;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 999; max-width: 340px; text-align: center;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+#toast.success { background: rgba(52,211,153,.15); border-color: rgba(52,211,153,.3); color: var(--success); }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ══════════════════════════════
-     ANALYZE TAB
-  ══════════════════════════════ */
-  #upload-area {
-    border: 2px dashed rgba(245,166,35,.4);
-    border-radius: var(--radius);
-    padding: 36px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-    margin-bottom: 14px;
-    background: rgba(245,166,35,.04);
-  }
-  #upload-area:hover { border-color: var(--primary); background: rgba(245,166,35,.08); }
-  #upload-area .upload-icon { font-size: 3rem; margin-bottom: 8px; }
-  #upload-area p { color: var(--muted); font-size: .9rem; }
-  #upload-area strong { color: var(--primary); }
-  #file-input { display: none; }
+/* ════════════════════════════════
+   ANALYZE TAB
+════════════════════════════════ */
+#upload-area {
+  border: 2px dashed rgba(245,166,35,.3);
+  border-radius: var(--radius);
+  padding: 48px 20px;
+  text-align: center; cursor: pointer;
+  background: radial-gradient(ellipse at center, rgba(245,166,35,.06) 0%, transparent 70%);
+  transition: border-color .2s, background .2s;
+  margin-bottom: 16px; position: relative; overflow: hidden;
+}
+#upload-area::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(245,166,35,.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+#upload-area:active { border-color: var(--primary); background: radial-gradient(ellipse at center, rgba(245,166,35,.12) 0%, transparent 70%); }
+.upload-icon-wrap {
+  width: 72px; height: 72px; border-radius: 22px; margin: 0 auto 16px;
+  background: linear-gradient(135deg, rgba(245,166,35,.2), rgba(245,166,35,.05));
+  border: 1.5px solid rgba(245,166,35,.25);
+  display: flex; align-items: center; justify-content: center; font-size: 2rem;
+}
+#upload-area h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+#upload-area p { font-size: .83rem; color: var(--muted); }
+#file-input { display: none; }
 
-  #preview-wrap { display: none; margin-bottom: 14px; position: relative; }
-  #preview-wrap img {
-    width: 100%; max-height: 280px;
-    object-fit: contain; border-radius: var(--radius);
-    background: var(--card);
-  }
-  #clear-image {
-    position: absolute; top: 8px; right: 8px;
-    background: rgba(0,0,0,.6); color: #fff;
-    border: none; border-radius: 50%;
-    width: 28px; height: 28px; cursor: pointer;
-    font-size: .9rem; display: flex; align-items: center; justify-content: center;
-  }
+#preview-wrap { display: none; margin-bottom: 16px; position: relative; border-radius: var(--radius); overflow: hidden; }
+#preview-wrap img { width: 100%; max-height: 300px; object-fit: cover; display: block; }
+.preview-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 40%);
+}
+#clear-image {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(8px);
+  color: #fff; border: none; border-radius: 50%;
+  width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+#clear-image:hover { background: rgba(0,0,0,.8); }
 
-  #result-card { display: none; }
-  #result-card .food-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
-  #result-card .serving-note { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
-  #result-card .calorie-big { font-size: 2.2rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
-  #result-card .calorie-big span { font-size: .9rem; font-weight: 500; color: var(--muted); }
-  #result-card .confidence { font-size: .75rem; color: var(--muted); margin-top: 10px; font-style: italic; }
-  #result-card .food-desc { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+#result-card { display: none; animation: slideUp .3s ease; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-  #log-btn-wrap { margin-top: 12px; }
+.result-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.food-name { font-size: 1.2rem; font-weight: 800; line-height: 1.2; flex: 1; }
+.conf-badge {
+  font-size: .65rem; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: .5px; margin-left: 8px; flex-shrink: 0;
+  margin-top: 2px;
+}
+.conf-badge.high { background: rgba(52,211,153,.15); color: var(--success); }
+.conf-badge.medium { background: rgba(245,166,35,.15); color: var(--primary); }
+.conf-badge.low { background: rgba(248,113,113,.15); color: var(--danger); }
 
-  /* ══════════════════════════════
-     LOG TAB
-  ══════════════════════════════ */
-  #log-date-nav {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  #log-date-nav button { background: var(--card); border: none; color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 1rem; }
-  #log-date-label { font-weight: 700; font-size: 1rem; }
+.serving-note { font-size: .78rem; color: var(--muted); margin-bottom: 16px; }
+.calorie-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 14px; }
+.calorie-big { font-size: 3rem; font-weight: 900; color: var(--primary); line-height: 1; letter-spacing: -2px; }
+.calorie-unit { font-size: .85rem; color: var(--muted); font-weight: 500; }
+.food-desc { font-size: .82rem; color: var(--muted); margin-top: 10px; line-height: 1.5; }
 
-  .entry-card {
-    background: var(--card); border-radius: var(--radius);
-    padding: 12px; margin-bottom: 10px;
-    display: flex; gap: 12px; align-items: center;
-  }
-  .entry-thumb {
-    width: 52px; height: 52px; object-fit: cover;
-    border-radius: 8px; flex-shrink: 0;
-    background: var(--card2);
-  }
-  .entry-info { flex: 1; min-width: 0; }
-  .entry-name { font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .entry-time { font-size: .73rem; color: var(--muted); margin-bottom: 4px; }
-  .entry-delete {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; padding: 4px; font-size: 1.1rem;
-    transition: color .2s; flex-shrink: 0;
-  }
-  .entry-delete:hover { color: var(--danger); }
+/* Macro rings */
+.macro-rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.ring-item { text-align: center; }
+.ring-wrap { position: relative; width: 64px; height: 64px; margin: 0 auto 6px; }
+.ring-wrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 5; }
+.ring-fill { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1); }
+.ring-fill.protein { stroke: var(--protein); }
+.ring-fill.carbs   { stroke: var(--carbs); }
+.ring-fill.fat     { stroke: var(--fat); }
+.ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-val { font-size: .85rem; font-weight: 800; line-height: 1; }
+.ring-unit { font-size: .55rem; color: var(--muted); }
+.ring-name { font-size: .68rem; color: var(--muted); font-weight: 600; }
 
-  #daily-totals {
-    background: var(--card); border-radius: var(--radius);
-    padding: 14px; margin-top: 4px;
-    border: 1px solid rgba(245,166,35,.2);
-  }
-  #daily-totals .totals-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 10px; }
-  #daily-totals .cal-total { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
+/* ════════════════════════════════
+   LOG TAB
+════════════════════════════════ */
+.date-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; background: var(--card);
+  border-radius: var(--radius-sm); padding: 4px;
+  border: 1px solid var(--border);
+}
+.date-nav-btn {
+  background: none; border: none; color: var(--muted);
+  width: 40px; height: 40px; border-radius: 10px;
+  cursor: pointer; font-size: 1.2rem; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, color .2s;
+}
+.date-nav-btn:hover:not(:disabled) { background: var(--card2); color: var(--text); }
+.date-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+#log-date-label { font-weight: 700; font-size: .95rem; }
 
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 10px; }
-  .empty-state p { font-size: .9rem; }
+.entry-card {
+  background: var(--card); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  padding: 12px; margin-bottom: 10px;
+  display: flex; gap: 12px; align-items: center;
+  animation: slideUp .25s ease;
+  transition: opacity .2s;
+}
+.entry-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex-shrink: 0; background: var(--card2); }
+.entry-info { flex: 1; min-width: 0; }
+.entry-name { font-weight: 700; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+.entry-time { font-size: .7rem; color: var(--muted); margin-bottom: 5px; }
+.entry-delete {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; padding: 6px; font-size: 1rem;
+  border-radius: 8px; transition: all .2s; flex-shrink: 0;
+}
+.entry-delete:hover { background: rgba(248,113,113,.12); color: var(--danger); }
 
-  /* ══════════════════════════════
-     STATS TAB
-  ══════════════════════════════ */
-  #chart-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-  .chart-btn {
-    padding: 6px 14px; border-radius: 20px; border: none;
-    font-size: .78rem; font-weight: 600; cursor: pointer;
-    background: var(--card); color: var(--muted); transition: all .2s;
-  }
-  .chart-btn.active { color: #000; }
-  .chart-btn.cal.active    { background: var(--primary); }
-  .chart-btn.protein.active { background: var(--protein); }
-  .chart-btn.carbs.active   { background: var(--carbs); }
-  .chart-btn.fat.active     { background: var(--fat); }
+#daily-totals {
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid rgba(245,166,35,.2);
+  padding: 16px; margin-top: 6px;
+  background: linear-gradient(135deg, var(--card) 0%, rgba(245,166,35,.05) 100%);
+}
+.totals-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.totals-title { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.cal-total { font-size: 1.5rem; font-weight: 900; color: var(--primary); letter-spacing: -1px; }
+.cal-total span { font-size: .78rem; color: var(--muted); font-weight: 500; letter-spacing: 0; }
 
-  #bar-chart-wrap {
-    background: var(--card); border-radius: var(--radius);
-    padding: 16px; margin-bottom: 14px;
-  }
-  #bar-chart {
-    display: flex; align-items: flex-end; gap: 6px;
-    height: 160px; margin-bottom: 8px;
-  }
-  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .bar-col .bar-val { font-size: .62rem; color: var(--muted); }
-  .bar-col .bar-bar {
-    width: 100%; border-radius: 4px 4px 0 0;
-    min-height: 4px; transition: height .4s ease;
-  }
-  .bar-col .bar-label { font-size: .65rem; color: var(--muted); margin-top: 4px; }
+.empty-state { text-align: center; padding: 52px 24px; }
+.empty-icon-wrap {
+  width: 80px; height: 80px; border-radius: 28px; margin: 0 auto 16px;
+  background: var(--card); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 2.2rem;
+}
+.empty-state h3 { font-size: .95rem; font-weight: 700; margin-bottom: 6px; }
+.empty-state p { font-size: .82rem; color: var(--muted); line-height: 1.5; }
 
-  #stats-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-  .stat-tile { background: var(--card); border-radius: var(--radius); padding: 14px; text-align: center; }
-  .stat-tile .tile-val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
-  .stat-tile .tile-label { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+/* ════════════════════════════════
+   STATS TAB
+════════════════════════════════ */
+.metric-tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--card); border-radius: var(--radius-sm); padding: 4px; border: 1px solid var(--border); }
+.metric-btn {
+  flex: 1; padding: 8px 4px; border-radius: 9px; border: none;
+  font-size: .7rem; font-weight: 700; cursor: pointer;
+  background: none; color: var(--muted);
+  transition: all .2s; white-space: nowrap;
+}
+.metric-btn.active { color: #000; }
+.metric-btn.cal.active     { background: var(--primary); }
+.metric-btn.protein.active { background: var(--protein); }
+.metric-btn.carbs.active   { background: var(--carbs); }
+.metric-btn.fat.active     { background: var(--fat); }
 
-  /* ══════════════════════════════
-     ADVICE TAB
-  ══════════════════════════════ */
-  #advice-content h3 { font-size: 1rem; font-weight: 700; margin: 14px 0 6px; color: var(--primary); }
-  #advice-content strong { font-weight: 700; }
-  #advice-content ul { padding-left: 18px; margin: 6px 0; }
-  #advice-content li { margin-bottom: 4px; font-size: .9rem; }
-  #advice-content p { font-size: .9rem; margin-bottom: 8px; }
-  #advice-timestamp { font-size: .73rem; color: var(--muted); margin-top: 12px; font-style: italic; }
+#bar-chart-wrap { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 14px 14px; margin-bottom: 14px; }
+#bar-chart { display: flex; align-items: flex-end; gap: 7px; height: 160px; margin-bottom: 8px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.bar-val { font-size: .58rem; color: var(--muted); min-height: 14px; }
+.bar-bar { width: 100%; border-radius: 6px 6px 0 0; min-height: 4px; transition: height .45s cubic-bezier(.4,0,.2,1); }
+.bar-day { font-size: .62rem; color: var(--muted); margin-top: 6px; }
+.bar-col.today .bar-day { color: var(--primary); font-weight: 700; }
 
-  /* ══════════════════════════════
-     SETTINGS MODAL
-  ══════════════════════════════ */
-  #modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.7); z-index: 200;
-    align-items: flex-end; justify-content: center;
-  }
-  #modal-overlay.open { display: flex; }
-  #modal {
-    background: var(--surface); width: 100%; max-width: 480px;
-    border-radius: var(--radius) var(--radius) 0 0;
-    padding: 20px 18px 32px;
-    max-height: 80vh; overflow-y: auto;
-  }
-  #modal h2 { font-size: 1.1rem; margin-bottom: 18px; }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
-  .form-group input {
-    width: 100%; background: var(--card); border: 1px solid rgba(255,255,255,.1);
-    border-radius: 8px; padding: 10px 12px; color: var(--text);
-    font-size: .95rem; outline: none;
-    transition: border-color .2s;
-  }
-  .form-group input:focus { border-color: var(--primary); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .modal-divider { height: 1px; background: rgba(255,255,255,.07); margin: 18px 0; }
-  .modal-close-bar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
-  #modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; }
+#stats-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-tile {
+  background: var(--card); border-radius: var(--radius-sm); border: 1px solid var(--border);
+  padding: 16px; text-align: center;
+}
+.tile-val { font-size: 1.6rem; font-weight: 900; color: var(--primary); letter-spacing: -1px; }
+.tile-label { font-size: .68rem; color: var(--muted); margin-top: 3px; font-weight: 600; }
+
+/* ════════════════════════════════
+   ADVICE TAB
+════════════════════════════════ */
+.advice-hero {
+  background: linear-gradient(135deg, rgba(245,166,35,.12) 0%, rgba(245,166,35,.03) 100%);
+  border: 1px solid rgba(245,166,35,.2);
+  border-radius: var(--radius); padding: 22px 18px; margin-bottom: 14px;
+  text-align: center;
+}
+.advice-avatar {
+  width: 64px; height: 64px; border-radius: 22px; margin: 0 auto 14px;
+  background: linear-gradient(135deg, rgba(245,166,35,.25), rgba(245,166,35,.08));
+  border: 1.5px solid rgba(245,166,35,.3);
+  display: flex; align-items: center; justify-content: center; font-size: 2rem;
+}
+.advice-hero h2 { font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
+.advice-hero p { font-size: .83rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+#advice-card { display: none; animation: slideUp .3s ease; }
+#advice-content h3 { font-size: .95rem; font-weight: 800; margin: 16px 0 8px; color: var(--primary); }
+#advice-content h3:first-child { margin-top: 0; }
+#advice-content strong { font-weight: 700; color: var(--text); }
+#advice-content ul { padding-left: 0; margin: 6px 0; list-style: none; }
+#advice-content li { font-size: .88rem; color: var(--muted); padding: 6px 0 6px 20px; position: relative; border-bottom: 1px solid var(--border); }
+#advice-content li:last-child { border-bottom: none; }
+#advice-content li::before { content: '→'; position: absolute; left: 0; color: var(--primary); font-size: .8rem; }
+#advice-content p { font-size: .88rem; color: var(--muted); margin-bottom: 8px; line-height: 1.6; }
+#advice-timestamp { font-size: .7rem; color: var(--muted); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* ════════════════════════════════
+   SETTINGS MODAL
+════════════════════════════════ */
+#modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+  z-index: 200; align-items: flex-end; justify-content: center;
+}
+#modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+#modal {
+  background: var(--surface); width: 100%; max-width: 430px;
+  border-radius: 24px 24px 0 0; padding: 0 18px 40px;
+  max-height: 85vh; overflow-y: auto;
+  animation: slideUpModal .25s cubic-bezier(.4,0,.2,1);
+  border-top: 1px solid var(--border);
+}
+@keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--card2); margin: 12px auto 20px; }
+#modal h2 { font-size: 1.05rem; font-weight: 800; margin-bottom: 20px; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: .68rem; font-weight: 800; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .8px; }
+.form-group input {
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text);
+  font-size: .95rem; outline: none; transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.form-group input:focus { border-color: var(--primary); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.modal-divider { height: 1px; background: var(--border); margin: 20px 0; }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>Food <span>Tracker</span> AI</h1>
+    <div class="logo">Food <span>Tracker</span> AI</div>
     <button id="settings-btn" aria-label="Settings">⚙️</button>
   </header>
 
   <div id="screens">
-    <!-- ANALYZE -->
+
+    <!-- ── ANALYZE ── -->
     <section class="screen active" id="screen-analyze">
-      <div id="upload-area" role="button" tabindex="0" aria-label="Upload food photo">
-        <div class="upload-icon">📷</div>
-        <p><strong>Tap to take a photo</strong></p>
-        <p>or upload from your gallery</p>
+      <div id="upload-area" role="button" tabindex="0">
+        <div class="upload-icon-wrap">📷</div>
+        <h3>Take a food photo</h3>
+        <p>or choose from your gallery</p>
       </div>
       <input type="file" id="file-input" accept="image/*" capture="environment">
 
       <div id="preview-wrap">
         <img id="preview-img" src="" alt="Food preview">
+        <div class="preview-overlay"></div>
         <button id="clear-image" aria-label="Remove image">✕</button>
       </div>
 
-      <button class="btn btn-primary" id="analyze-btn" disabled>
+      <button class="btn btn-primary" id="analyze-btn" disabled style="margin-bottom:14px;">
         <span class="btn-text">✨ Analyze with AI</span>
       </button>
 
-      <div class="card" id="result-card" style="margin-top:14px;">
-        <div class="card-title">Analysis Result</div>
-        <div class="food-name" id="r-name"></div>
-        <div class="serving-note" id="r-serving"></div>
-        <div class="calorie-big" id="r-cals"></div>
-        <div class="macros" id="r-macros"></div>
-        <div class="food-desc" id="r-desc"></div>
-        <div class="confidence" id="r-conf"></div>
-        <div id="log-btn-wrap">
-          <button class="btn btn-secondary" id="log-entry-btn" style="margin-top:12px;">📋 Log This Entry</button>
+      <div class="card" id="result-card">
+        <div class="card-label">Analysis Result</div>
+        <div class="result-header">
+          <div class="food-name" id="r-name"></div>
+          <div class="conf-badge" id="r-conf"></div>
         </div>
+        <div class="serving-note" id="r-serving"></div>
+        <div class="calorie-row">
+          <div class="calorie-big" id="r-cals">0</div>
+          <div class="calorie-unit">kcal</div>
+        </div>
+        <div class="macro-rings" id="r-rings"></div>
+        <div class="food-desc" id="r-desc"></div>
+        <button class="btn btn-ghost" id="log-entry-btn" style="margin-top:14px;">📋 Log This Entry</button>
       </div>
     </section>
 
-    <!-- LOG -->
+    <!-- ── LOG ── -->
     <section class="screen" id="screen-log">
-      <div id="log-date-nav">
-        <button id="log-prev">‹</button>
+      <div class="date-nav">
+        <button class="date-nav-btn" id="log-prev">‹</button>
         <span id="log-date-label">Today</span>
-        <button id="log-next">›</button>
+        <button class="date-nav-btn" id="log-next">›</button>
       </div>
       <div id="log-list"></div>
       <div id="daily-totals" style="display:none;">
-        <div class="totals-title">Daily Totals</div>
-        <div class="cal-total" id="dt-cals"></div>
+        <div class="totals-header">
+          <div class="totals-title">Daily Totals</div>
+          <div class="cal-total"><span id="dt-cals-val"></span> <span>kcal</span></div>
+        </div>
         <div class="macros" id="dt-macros"></div>
-        <div id="dt-bars" style="margin-top:12px;"></div>
+        <div id="dt-bars" style="margin-top:14px;"></div>
       </div>
     </section>
 
-    <!-- STATS -->
+    <!-- ── STATS ── -->
     <section class="screen" id="screen-stats">
-      <div id="chart-toggle">
-        <button class="chart-btn cal active" data-metric="calories">🔥 Calories</button>
-        <button class="chart-btn protein" data-metric="protein">💪 Protein</button>
-        <button class="chart-btn carbs" data-metric="carbs">🌾 Carbs</button>
-        <button class="chart-btn fat" data-metric="fat">🥑 Fat</button>
+      <div class="metric-tabs" id="chart-toggle">
+        <button class="metric-btn cal active" data-metric="calories">🔥 Cal</button>
+        <button class="metric-btn protein" data-metric="protein">💪 Protein</button>
+        <button class="metric-btn carbs" data-metric="carbs">🌾 Carbs</button>
+        <button class="metric-btn fat" data-metric="fat">🥑 Fat</button>
       </div>
       <div id="bar-chart-wrap">
         <div id="bar-chart"></div>
@@ -403,33 +482,37 @@
       <div id="stats-summary"></div>
     </section>
 
-    <!-- ADVICE -->
+    <!-- ── ADVICE ── -->
     <section class="screen" id="screen-advice">
-      <div class="card">
-        <div class="card-title">🤖 AI Nutrition Coach</div>
-        <p style="font-size:.88rem;color:var(--muted);margin-bottom:14px;">Get personalized advice based on your last 7 days of food logs.</p>
-        <button class="btn btn-primary" id="advice-btn">Get Personalized Advice</button>
+      <div class="advice-hero">
+        <div class="advice-avatar">🤖</div>
+        <h2>AI Nutrition Coach</h2>
+        <p>Get personalized advice based on your food logs and goals.</p>
+        <button class="btn btn-primary" id="advice-btn">
+          <span class="btn-text">✨ Get Personalized Advice</span>
+        </button>
       </div>
-      <div class="card" id="advice-card" style="display:none;">
+      <div class="card" id="advice-card">
+        <div class="card-label">Your Personalized Advice</div>
         <div id="advice-content"></div>
         <div id="advice-timestamp"></div>
       </div>
     </section>
+
   </div>
 
-  <!-- Tab Bar -->
   <nav id="tab-bar">
-    <button class="tab-btn active" data-tab="analyze"><span class="icon">📷</span>Analyze</button>
-    <button class="tab-btn" data-tab="log"><span class="icon">📋</span>Log</button>
-    <button class="tab-btn" data-tab="stats"><span class="icon">📊</span>Stats</button>
-    <button class="tab-btn" data-tab="advice"><span class="icon">🤖</span>Advice</button>
+    <button class="tab-btn active" data-tab="analyze"><span class="tab-icon">📷</span>Analyze<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="log"><span class="tab-icon">📋</span>Log<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span>Stats<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="advice"><span class="tab-icon">🤖</span>Advice<span class="tab-dot"></span></button>
   </nav>
 </div>
 
 <!-- Settings Modal -->
 <div id="modal-overlay">
   <div id="modal">
-    <div class="modal-close-bar"><button id="modal-close">✕</button></div>
+    <div class="modal-handle"></div>
     <h2>⚙️ Settings</h2>
     <div class="form-group">
       <label>Anthropic API Key</label>
@@ -440,18 +523,9 @@
       <input type="number" id="s-cals" placeholder="2000">
     </div>
     <div class="form-row">
-      <div class="form-group">
-        <label>Protein (g)</label>
-        <input type="number" id="s-protein" placeholder="150">
-      </div>
-      <div class="form-group">
-        <label>Carbs (g)</label>
-        <input type="number" id="s-carbs" placeholder="200">
-      </div>
-      <div class="form-group">
-        <label>Fat (g)</label>
-        <input type="number" id="s-fat" placeholder="65">
-      </div>
+      <div class="form-group"><label>Protein (g)</label><input type="number" id="s-protein" placeholder="150"></div>
+      <div class="form-group"><label>Carbs (g)</label><input type="number" id="s-carbs" placeholder="200"></div>
+      <div class="form-group"><label>Fat (g)</label><input type="number" id="s-fat" placeholder="65"></div>
     </div>
     <button class="btn btn-primary" id="save-settings-btn" style="margin-bottom:10px;">Save Settings</button>
     <div class="modal-divider"></div>
@@ -464,20 +538,19 @@
 <script>
 'use strict';
 
-// ── Storage ──────────────────────────────────────────────
+// ── Storage ──────────────────────────────────────────────────
 const KEYS = { entries: 'foodlog_entries', settings: 'foodlog_settings', advice: 'foodlog_advice_cache' };
 
 function getEntries() {
   try { return JSON.parse(localStorage.getItem(KEYS.entries) || '[]'); } catch { return []; }
 }
 function saveEntries(arr) {
-  try { localStorage.setItem(KEYS.entries, JSON.stringify(arr)); } catch(e) {
-    if (e.name === 'QuotaExceededError') { pruneOldEntries(); }
-  }
+  try { localStorage.setItem(KEYS.entries, JSON.stringify(arr)); }
+  catch(e) { if (e.name === 'QuotaExceededError') pruneOldEntries(); }
 }
-function saveEntry(entry) { const arr = getEntries(); arr.push(entry); saveEntries(arr); }
+function saveEntry(entry) { const a = getEntries(); a.push(entry); saveEntries(a); }
 function deleteEntry(id) { saveEntries(getEntries().filter(e => e.id !== id)); }
-function getEntriesByDate(dateStr) { return getEntries().filter(e => e.date === dateStr); }
+function getEntriesByDate(ds) { return getEntries().filter(e => e.date === ds); }
 function getEntriesLastNDays(n) {
   const cutoff = Date.now() - n * 86400000;
   return getEntries().filter(e => e.timestamp >= cutoff);
@@ -485,16 +558,14 @@ function getEntriesLastNDays(n) {
 function pruneOldEntries() {
   const cutoff = Date.now() - 30 * 86400000;
   saveEntries(getEntries().filter(e => e.timestamp >= cutoff));
-  showToast('Old entries pruned to free up space', false);
+  showToast('Old entries pruned to free up space');
 }
 
 function getSettings() {
-  const defaults = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65 };
-  try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEYS.settings) || '{}')); } catch { return defaults; }
+  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65 };
+  try { return Object.assign({}, d, JSON.parse(localStorage.getItem(KEYS.settings) || '{}')); } catch { return d; }
 }
-function saveSettings(partial) {
-  localStorage.setItem(KEYS.settings, JSON.stringify(Object.assign(getSettings(), partial)));
-}
+function saveSettings(p) { localStorage.setItem(KEYS.settings, JSON.stringify(Object.assign(getSettings(), p))); }
 
 function getAdviceCache() {
   try { return JSON.parse(localStorage.getItem(KEYS.advice)); } catch { return null; }
@@ -503,30 +574,21 @@ function saveAdviceCache(advice) {
   localStorage.setItem(KEYS.advice, JSON.stringify({ advice, generatedAt: Date.now() }));
 }
 
-// ── Utilities ─────────────────────────────────────────────
+// ── Utilities ──────────────────────────────────────────────
 function generateId() {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
-
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-
 function dateStr(d) { return d.toISOString().slice(0, 10); }
-
-function formatDateLabel(str) {
-  const today = todayStr();
-  const yesterday = dateStr(new Date(Date.now() - 86400000));
-  if (str === today) return 'Today';
-  if (str === yesterday) return 'Yesterday';
-  const d = new Date(str + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+function formatDateLabel(s) {
+  const today = todayStr(), yesterday = dateStr(new Date(Date.now() - 86400000));
+  if (s === today) return 'Today';
+  if (s === yesterday) return 'Yesterday';
+  return new Date(s + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
-
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-
-function clamp(val, min, max) { return Math.min(max, Math.max(min, val)); }
 
 let toastTimer;
 function showToast(msg, isError = true) {
@@ -534,11 +596,11 @@ function showToast(msg, isError = true) {
   t.textContent = msg;
   t.className = 'show' + (isError ? '' : ' success');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = ''; }, 3500);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3200);
 }
 
 // ── Image handling ─────────────────────────────────────────
-let pendingImage = null; // { base64, mediaType, dataURL }
+let pendingImage = null;
 let pendingResult = null;
 
 async function compressImage(file) {
@@ -559,7 +621,7 @@ async function compressImage(file) {
         const dataURL = canvas.toDataURL('image/jpeg', 0.82);
         const base64 = dataURL.split(',')[1];
         if (base64.length > 5 * 1024 * 1024) {
-          reject(new Error('Image is too large even after compression. Please use a lower-resolution photo.'));
+          reject(new Error('Image too large. Use a lower-resolution photo.'));
         } else {
           resolve({ base64, mediaType: 'image/jpeg', dataURL });
         }
@@ -578,8 +640,7 @@ function handleFileSelect(e) {
   compressImage(file).then(img => {
     pendingImage = img;
     pendingResult = null;
-    const previewImg = document.getElementById('preview-img');
-    previewImg.src = img.dataURL;
+    document.getElementById('preview-img').src = img.dataURL;
     document.getElementById('preview-wrap').style.display = 'block';
     document.getElementById('upload-area').style.display = 'none';
     document.getElementById('analyze-btn').disabled = false;
@@ -597,7 +658,7 @@ function clearImage() {
 }
 
 // ── Claude API ─────────────────────────────────────────────
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
 
 function apiHeaders(key) {
@@ -610,62 +671,36 @@ function apiHeaders(key) {
 }
 
 async function callClaude(body, apiKey) {
-  const res = await fetch(ANTHROPIC_URL, {
-    method: 'POST',
-    headers: apiHeaders(apiKey),
-    body: JSON.stringify(body)
-  });
+  const res = await fetch(API_URL, { method: 'POST', headers: apiHeaders(apiKey), body: JSON.stringify(body) });
   const data = await res.json();
-  if (!res.ok) {
-    const msg = data.error?.message || `API error ${res.status}`;
-    throw new Error(msg);
-  }
+  if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
   return data.content[0].text;
 }
 
 async function analyzeFood() {
   const settings = getSettings();
-  if (!settings.apiKey) { openSettings(); showToast('Please enter your API key in Settings'); return; }
+  if (!settings.apiKey) { openSettings(); showToast('Enter your API key in Settings first'); return; }
   if (!pendingImage) return;
 
   const btn = document.getElementById('analyze-btn');
   setLoading(btn, true);
 
-  const prompt = `Analyze this food image and estimate its nutritional content.
-Return ONLY a valid JSON object with exactly these fields — no prose, no markdown:
-{
-  "name": "descriptive food name",
-  "description": "1-2 sentence description of what you see",
-  "calories": <integer>,
-  "protein_g": <number with 1 decimal>,
-  "carbs_g": <number with 1 decimal>,
-  "fat_g": <number with 1 decimal>,
-  "serving_note": "assumed portion size",
-  "confidence": "low|medium|high"
-}
-Base estimates on standard restaurant or home serving sizes if portion is ambiguous.`;
-
   try {
     const text = await callClaude({
-      model: MODEL,
-      max_tokens: 512,
+      model: MODEL, max_tokens: 512,
       system: 'You are a nutrition analysis assistant. Respond ONLY with valid JSON, no prose, no markdown fences.',
       messages: [{
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: pendingImage.mediaType, data: pendingImage.base64 } },
-          { type: 'text', text: prompt }
+          { type: 'text', text: `Analyze this food image. Return ONLY a JSON object:\n{"name":"food name","description":"1-2 sentences","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion","confidence":"low|medium|high"}` }
         ]
       }]
     }, settings.apiKey);
 
     let result;
     try { result = JSON.parse(text); }
-    catch {
-      const m = text.match(/\{[\s\S]*\}/);
-      if (m) result = JSON.parse(m[0]);
-      else throw new Error('Could not parse AI response. Please try again.');
-    }
+    catch { const m = text.match(/\{[\s\S]*\}/); if (m) result = JSON.parse(m[0]); else throw new Error('Could not parse AI response. Try again.'); }
 
     pendingResult = result;
     renderAnalysisResult(result);
@@ -678,12 +713,11 @@ Base estimates on standard restaurant or home serving sizes if portion is ambigu
 
 async function fetchAdvice() {
   const settings = getSettings();
-  if (!settings.apiKey) { openSettings(); showToast('Please enter your API key in Settings'); return; }
+  if (!settings.apiKey) { openSettings(); showToast('Enter your API key in Settings first'); return; }
 
   const entries = getEntriesLastNDays(7);
-  const uniqueDays = new Set(entries.map(e => e.date)).size;
-  if (uniqueDays < 2) {
-    showToast('Log at least 2 days of meals to get personalized advice', false);
+  if (entries.length === 0) {
+    showToast('Log at least one meal first!');
     return;
   }
 
@@ -694,12 +728,11 @@ async function fetchAdvice() {
 
   try {
     const text = await callClaude({
-      model: MODEL,
-      max_tokens: 600,
-      system: 'You are a helpful nutrition coach. Be concise, warm, and practical. Use simple markdown: ## for headings, ** for bold, - for bullet points.',
+      model: MODEL, max_tokens: 700,
+      system: 'You are a helpful nutrition coach. Be warm, concise, and actionable. Use simple markdown: ## for section headings, ** for bold, - for bullets.',
       messages: [{
         role: 'user',
-        content: `Here is my food log for the past 7 days:\n\n${summary}\n\nMy daily goals: ${settings.dailyCalorieGoal} kcal, ${settings.proteinGoal_g}g protein, ${settings.carbsGoal_g}g carbs, ${settings.fatGoal_g}g fat.\n\nBased on this history, give me:\n1. 2-3 observations about my eating patterns\n2. 2-3 specific, actionable suggestions for improvement\n3. One thing I am doing well\n\nKeep your response under 300 words.`
+        content: `My food log (last 7 days):\n\n${summary}\n\nMy daily goals: ${settings.dailyCalorieGoal} kcal, ${settings.proteinGoal_g}g protein, ${settings.carbsGoal_g}g carbs, ${settings.fatGoal_g}g fat.\n\nGive me:\n1. 2-3 key observations about my eating patterns\n2. 2-3 specific, actionable improvements\n3. One thing I'm doing well\n\nKeep it under 300 words.`
       }]
     }, settings.apiKey);
 
@@ -722,46 +755,69 @@ function buildLogSummary(entries, settings) {
     byDay[e.date].fat += e.fat_g || 0;
     byDay[e.date].foods.push(e.name);
   });
-  return Object.entries(byDay).sort(([a],[b]) => a < b ? 1 : -1).map(([date, d]) => {
-    return `${formatDateLabel(date)}: ${Math.round(d.cals)} kcal | P:${Math.round(d.protein)}g C:${Math.round(d.carbs)}g F:${Math.round(d.fat)}g | Foods: ${d.foods.slice(0,4).join(', ')}`;
-  }).join('\n');
+  return Object.entries(byDay).sort(([a],[b]) => a < b ? 1 : -1).map(([date, d]) =>
+    `${formatDateLabel(date)}: ${Math.round(d.cals)} kcal | P:${Math.round(d.protein)}g C:${Math.round(d.carbs)}g F:${Math.round(d.fat)}g | ${d.foods.slice(0,4).join(', ')}`
+  ).join('\n');
 }
 
 // ── Rendering ──────────────────────────────────────────────
 function renderAnalysisResult(r) {
   document.getElementById('r-name').textContent = r.name || 'Unknown food';
   document.getElementById('r-serving').textContent = r.serving_note || '';
-  document.getElementById('r-cals').innerHTML = `${r.calories || 0} <span>kcal</span>`;
-  document.getElementById('r-macros').innerHTML = `
-    <span class="macro-pill protein">P: ${r.protein_g || 0}g</span>
-    <span class="macro-pill carbs">C: ${r.carbs_g || 0}g</span>
-    <span class="macro-pill fat">F: ${r.fat_g || 0}g</span>`;
+  document.getElementById('r-cals').textContent = r.calories || 0;
   document.getElementById('r-desc').textContent = r.description || '';
-  const conf = r.confidence || 'medium';
-  document.getElementById('r-conf').textContent = `Confidence: ${conf.charAt(0).toUpperCase() + conf.slice(1)}`;
+
+  const conf = (r.confidence || 'medium').toLowerCase();
+  const confEl = document.getElementById('r-conf');
+  confEl.textContent = conf.charAt(0).toUpperCase() + conf.slice(1);
+  confEl.className = `conf-badge ${conf}`;
+
+  // Macro rings
+  const total = (r.protein_g || 0) + (r.carbs_g || 0) + (r.fat_g || 0);
+  const rings = [
+    { label: 'Protein', val: r.protein_g || 0, cls: 'protein', color: 'var(--protein)' },
+    { label: 'Carbs',   val: r.carbs_g   || 0, cls: 'carbs',   color: 'var(--carbs)' },
+    { label: 'Fat',     val: r.fat_g     || 0, cls: 'fat',     color: 'var(--fat)' },
+  ];
+  const C = 2 * Math.PI * 27; // circumference for r=27
+  document.getElementById('r-rings').innerHTML = rings.map(ring => {
+    const pct = total > 0 ? ring.val / total : 0;
+    const dash = C * pct;
+    const gap = C - dash;
+    return `<div class="ring-item">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 64 64" width="64" height="64">
+          <circle class="ring-bg" cx="32" cy="32" r="27"/>
+          <circle class="ring-fill ${ring.cls}" cx="32" cy="32" r="27"
+            stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}"
+            stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-label">
+          <span class="ring-val" style="color:${ring.color}">${ring.val}g</span>
+          <span class="ring-unit">g</span>
+        </div>
+      </div>
+      <div class="ring-name">${ring.label}</div>
+    </div>`;
+  }).join('');
+
   document.getElementById('result-card').style.display = 'block';
-  document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
 
 function logCurrentEntry() {
   if (!pendingResult || !pendingImage) return;
   const entry = {
-    id: generateId(),
-    timestamp: Date.now(),
-    date: todayStr(),
+    id: generateId(), timestamp: Date.now(), date: todayStr(),
     imageDataURL: pendingImage.dataURL,
-    name: pendingResult.name,
-    description: pendingResult.description,
-    calories: pendingResult.calories,
-    protein_g: pendingResult.protein_g,
-    carbs_g: pendingResult.carbs_g,
-    fat_g: pendingResult.fat_g,
-    serving_note: pendingResult.serving_note,
-    confidence: pendingResult.confidence
+    name: pendingResult.name, description: pendingResult.description,
+    calories: pendingResult.calories, protein_g: pendingResult.protein_g,
+    carbs_g: pendingResult.carbs_g, fat_g: pendingResult.fat_g,
+    serving_note: pendingResult.serving_note, confidence: pendingResult.confidence
   };
   saveEntry(entry);
-  clearImage();
-  pendingResult = null;
+  clearImage(); pendingResult = null;
+  if (navigator.vibrate) navigator.vibrate(30);
   showToast('Entry logged!', false);
   switchTab('log');
 }
@@ -775,16 +831,18 @@ function renderLogScreen() {
   renderLogList(logCurrentDate);
 }
 
-function renderLogList(dateStr) {
-  const entries = getEntriesByDate(dateStr);
+function renderLogList(ds) {
+  const entries = getEntriesByDate(ds);
   const list = document.getElementById('log-list');
-
   if (!entries.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🍽️</div><p>No entries for this day.<br>Take a photo to get started!</p></div>`;
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon-wrap">🍽️</div>
+      <h3>No meals logged</h3>
+      <p>Take a photo of your food<br>to get started</p>
+    </div>`;
     document.getElementById('daily-totals').style.display = 'none';
     return;
   }
-
   list.innerHTML = entries.map(e => `
     <div class="entry-card" id="ec-${e.id}">
       <img class="entry-thumb" src="${e.imageDataURL}" alt="${e.name}" loading="lazy">
@@ -792,48 +850,40 @@ function renderLogList(dateStr) {
         <div class="entry-name">${e.name}</div>
         <div class="entry-time">${formatTime(e.timestamp)}</div>
         <div class="macros">
-          <span class="macro-pill cal">${e.calories} kcal</span>
-          <span class="macro-pill protein">P:${e.protein_g}g</span>
-          <span class="macro-pill carbs">C:${e.carbs_g}g</span>
-          <span class="macro-pill fat">F:${e.fat_g}g</span>
+          <span class="mpill cal">${e.calories} kcal</span>
+          <span class="mpill protein">P ${e.protein_g}g</span>
+          <span class="mpill carbs">C ${e.carbs_g}g</span>
+          <span class="mpill fat">F ${e.fat_g}g</span>
         </div>
       </div>
-      <button class="entry-delete" data-id="${e.id}" aria-label="Delete entry">🗑️</button>
+      <button class="entry-delete" data-id="${e.id}" aria-label="Delete">🗑</button>
     </div>`).join('');
-
   renderDailyTotals(entries);
 }
 
 function renderDailyTotals(entries) {
-  const totals = { cals: 0, protein: 0, carbs: 0, fat: 0 };
-  entries.forEach(e => {
-    totals.cals += e.calories || 0;
-    totals.protein += e.protein_g || 0;
-    totals.carbs += e.carbs_g || 0;
-    totals.fat += e.fat_g || 0;
-  });
-
+  const t = { cals: 0, protein: 0, carbs: 0, fat: 0 };
+  entries.forEach(e => { t.cals += e.calories||0; t.protein += e.protein_g||0; t.carbs += e.carbs_g||0; t.fat += e.fat_g||0; });
   const s = getSettings();
   const wrap = document.getElementById('daily-totals');
   wrap.style.display = 'block';
-  document.getElementById('dt-cals').textContent = `${Math.round(totals.cals)} / ${s.dailyCalorieGoal} kcal`;
+  document.getElementById('dt-cals-val').textContent = Math.round(t.cals);
   document.getElementById('dt-macros').innerHTML = `
-    <span class="macro-pill protein">P: ${Math.round(totals.protein)}g / ${s.proteinGoal_g}g</span>
-    <span class="macro-pill carbs">C: ${Math.round(totals.carbs)}g / ${s.carbsGoal_g}g</span>
-    <span class="macro-pill fat">F: ${Math.round(totals.fat)}g / ${s.fatGoal_g}g</span>`;
-
+    <span class="mpill protein">P ${Math.round(t.protein)}g / ${s.proteinGoal_g}g</span>
+    <span class="mpill carbs">C ${Math.round(t.carbs)}g / ${s.carbsGoal_g}g</span>
+    <span class="mpill fat">F ${Math.round(t.fat)}g / ${s.fatGoal_g}g</span>`;
   const bars = [
-    { label: 'Calories', val: totals.cals, goal: s.dailyCalorieGoal, cls: 'cal' },
-    { label: 'Protein', val: totals.protein, goal: s.proteinGoal_g, cls: 'protein' },
-    { label: 'Carbs', val: totals.carbs, goal: s.carbsGoal_g, cls: 'carbs' },
-    { label: 'Fat', val: totals.fat, goal: s.fatGoal_g, cls: 'fat' },
+    { label: 'Calories', val: t.cals, goal: s.dailyCalorieGoal, cls: 'cal' },
+    { label: 'Protein',  val: t.protein, goal: s.proteinGoal_g, cls: 'protein' },
+    { label: 'Carbs',    val: t.carbs,   goal: s.carbsGoal_g,   cls: 'carbs' },
+    { label: 'Fat',      val: t.fat,     goal: s.fatGoal_g,     cls: 'fat' },
   ];
   document.getElementById('dt-bars').innerHTML = bars.map(b => {
     const pct = Math.min(100, Math.round(b.val / b.goal * 100));
     const over = b.val > b.goal;
-    return `<div class="progress-wrap">
-      <div class="progress-label"><span>${b.label}</span><span>${Math.round(b.val)} / ${b.goal}</span></div>
-      <div class="progress-track"><div class="progress-fill ${over ? 'over' : b.cls}" style="width:${pct}%"></div></div>
+    return `<div class="prog-row">
+      <div class="prog-meta"><span>${b.label}</span><span>${Math.round(b.val)} / ${b.goal}</span></div>
+      <div class="prog-track"><div class="prog-fill ${over ? 'over' : b.cls}" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
 }
@@ -849,125 +899,103 @@ function renderStatsScreen() {
 
 function renderBarChart(entries, metric) {
   const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000);
-    days.push(dateStr(d));
-  }
-
+  for (let i = 6; i >= 0; i--) { const d = new Date(Date.now() - i * 86400000); days.push(dateStr(d)); }
+  const today = todayStr();
   const metricMap = {
-    calories: { key: 'calories', label: 'kcal', color: 'var(--primary)' },
-    protein:  { key: 'protein_g', label: 'g', color: 'var(--protein)' },
-    carbs:    { key: 'carbs_g', label: 'g', color: 'var(--carbs)' },
-    fat:      { key: 'fat_g', label: 'g', color: 'var(--fat)' }
+    calories: { key: 'calories', color: 'var(--primary)' },
+    protein:  { key: 'protein_g', color: 'var(--protein)' },
+    carbs:    { key: 'carbs_g',   color: 'var(--carbs)' },
+    fat:      { key: 'fat_g',     color: 'var(--fat)' }
   };
   const m = metricMap[metric];
-
   const byDay = {};
   days.forEach(d => { byDay[d] = 0; });
   entries.forEach(e => { if (byDay[e.date] !== undefined) byDay[e.date] += (e[m.key] || 0); });
-
   const vals = days.map(d => byDay[d]);
   const maxVal = Math.max(...vals, 1);
-
-  const chart = document.getElementById('bar-chart');
-  chart.innerHTML = days.map((d, i) => {
+  document.getElementById('bar-chart').innerHTML = days.map((d, i) => {
     const val = vals[i];
-    const heightPct = val / maxVal;
-    const heightPx = Math.max(4, Math.round(heightPct * 140));
+    const hPx = Math.max(4, Math.round((val / maxVal) * 140));
     const label = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-    const displayVal = metric === 'calories' ? Math.round(val) : Math.round(val * 10) / 10;
-    return `<div class="bar-col">
-      <span class="bar-val">${val > 0 ? displayVal : ''}</span>
-      <div class="bar-bar" style="height:${heightPx}px;background:${val > 0 ? m.color : 'var(--card2)'};"></div>
-      <span class="bar-label">${label}</span>
+    const display = metric === 'calories' ? Math.round(val) : Math.round(val * 10) / 10;
+    const isToday = d === today;
+    return `<div class="bar-col${isToday ? ' today' : ''}">
+      <span class="bar-val">${val > 0 ? display : ''}</span>
+      <div class="bar-bar" style="height:${hPx}px;background:${val > 0 ? m.color : 'var(--card2)'};${isToday && val > 0 ? 'box-shadow:0 0 12px ' + m.color + '55' : ''}"></div>
+      <span class="bar-day">${isToday ? 'Today' : label}</span>
     </div>`;
   }).join('');
 }
 
 function renderStatsSummary(entries) {
   const uniqueDays = new Set(entries.map(e => e.date)).size;
-  const totalCals = entries.reduce((s, e) => s + (e.calories || 0), 0);
-  const avgCals = uniqueDays > 0 ? Math.round(totalCals / uniqueDays) : 0;
+  const avgCals = uniqueDays > 0 ? Math.round(entries.reduce((s, e) => s + (e.calories || 0), 0) / uniqueDays) : 0;
   const streak = calcStreak();
-  const totalEntries = entries.length;
-
   document.getElementById('stats-summary').innerHTML = `
-    <div class="stat-tile"><div class="tile-val">${avgCals}</div><div class="tile-label">Avg Daily Calories</div></div>
-    <div class="stat-tile"><div class="tile-val">${streak}</div><div class="tile-label">Day Streak 🔥</div></div>
-    <div class="stat-tile"><div class="tile-val">${totalEntries}</div><div class="tile-label">Meals Logged (7d)</div></div>
+    <div class="stat-tile"><div class="tile-val">${avgCals}</div><div class="tile-label">Avg Daily Cal</div></div>
+    <div class="stat-tile"><div class="tile-val">${streak}🔥</div><div class="tile-label">Day Streak</div></div>
+    <div class="stat-tile"><div class="tile-val">${entries.length}</div><div class="tile-label">Meals (7 days)</div></div>
     <div class="stat-tile"><div class="tile-val">${uniqueDays}</div><div class="tile-label">Active Days</div></div>`;
 }
 
 function calcStreak() {
-  let streak = 0;
-  const allEntries = getEntries();
-  const loggedDays = new Set(allEntries.map(e => e.date));
-  let d = new Date();
-  while (true) {
-    const s = dateStr(d);
-    if (loggedDays.has(s)) { streak++; d = new Date(d - 86400000); }
-    else break;
-  }
+  const loggedDays = new Set(getEntries().map(e => e.date));
+  let streak = 0, d = new Date();
+  while (loggedDays.has(dateStr(d))) { streak++; d = new Date(d - 86400000); }
   return streak;
 }
 
 // ── Advice Tab ─────────────────────────────────────────────
 function renderAdviceScreen() {
   const cache = getAdviceCache();
-  if (cache && Date.now() - cache.generatedAt < 6 * 3600 * 1000) {
-    renderAdvice(cache.advice, cache.generatedAt);
-  }
+  if (cache && Date.now() - cache.generatedAt < 6 * 3600 * 1000) renderAdvice(cache.advice, cache.generatedAt);
 }
 
 function renderAdvice(text, generatedAt) {
   document.getElementById('advice-content').innerHTML = renderMarkdown(text);
-  if (generatedAt) {
-    const mins = Math.round((Date.now() - generatedAt) / 60000);
-    document.getElementById('advice-timestamp').textContent = mins < 2 ? 'Generated just now' : `Generated ${mins} minutes ago`;
-  } else {
-    document.getElementById('advice-timestamp').textContent = 'Generated just now';
-  }
+  const mins = generatedAt ? Math.round((Date.now() - generatedAt) / 60000) : 0;
+  document.getElementById('advice-timestamp').textContent = mins < 2 ? 'Generated just now' : `Generated ${mins} min ago`;
   document.getElementById('advice-card').style.display = 'block';
 }
 
 function renderMarkdown(text) {
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, m => `<ul>${m}</ul>`)
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hup])/gm, '')
-    .replace(/\n/g, ' ')
-    .replace(/^(.+)$/, '<p>$1</p>');
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines = escaped.split('\n');
+  let html = '', inList = false;
+  for (const raw of lines) {
+    const line = raw
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    if (/^#{1,3} /.test(line)) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h3>${line.replace(/^#{1,3} /, '')}</h3>`;
+    } else if (/^[-*] /.test(line)) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${line.replace(/^[-*] /, '')}</li>`;
+    } else if (line.trim()) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<p>${line}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
 }
 
 // ── UI Helpers ─────────────────────────────────────────────
-function setLoading(btn, on, lightSpinner = false) {
-  const textEl = btn.querySelector('.btn-text') || btn;
+function setLoading(btn, on, light = false) {
   if (on) {
     btn.disabled = true;
-    if (btn.querySelector('.btn-text')) {
-      btn.querySelector('.btn-text').style.display = 'none';
-    } else {
-      btn._origText = btn.textContent;
-      btn.textContent = '';
-    }
+    const textEl = btn.querySelector('.btn-text');
+    if (textEl) textEl.style.display = 'none'; else { btn._t = btn.textContent; btn.textContent = ''; }
     const sp = document.createElement('div');
-    sp.className = 'spinner' + (lightSpinner ? ' light' : '');
+    sp.className = 'spinner' + (light ? ' light' : '');
     btn.appendChild(sp);
   } else {
     btn.disabled = false;
     const sp = btn.querySelector('.spinner');
     if (sp) sp.remove();
-    if (btn.querySelector('.btn-text')) {
-      btn.querySelector('.btn-text').style.display = '';
-    } else if (btn._origText) {
-      btn.textContent = btn._origText;
-    }
+    const textEl = btn.querySelector('.btn-text');
+    if (textEl) textEl.style.display = ''; else if (btn._t) btn.textContent = btn._t;
   }
 }
 
@@ -977,68 +1005,50 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
   document.querySelector(`.tab-btn[data-tab="${name}"]`).classList.add('active');
-
   if (name === 'log') renderLogScreen();
   if (name === 'stats') renderStatsScreen();
   if (name === 'advice') renderAdviceScreen();
 }
 
-// ── Settings Modal ─────────────────────────────────────────
+// ── Settings ───────────────────────────────────────────────
 function openSettings() {
   const s = getSettings();
   document.getElementById('s-apikey').value = s.apiKey || '';
-  document.getElementById('s-cals').value = s.dailyCalorieGoal || 2000;
-  document.getElementById('s-protein').value = s.proteinGoal_g || 150;
-  document.getElementById('s-carbs').value = s.carbsGoal_g || 200;
-  document.getElementById('s-fat').value = s.fatGoal_g || 65;
+  document.getElementById('s-cals').value = s.dailyCalorieGoal;
+  document.getElementById('s-protein').value = s.proteinGoal_g;
+  document.getElementById('s-carbs').value = s.carbsGoal_g;
+  document.getElementById('s-fat').value = s.fatGoal_g;
   document.getElementById('modal-overlay').classList.add('open');
 }
-
-function closeSettings() {
-  document.getElementById('modal-overlay').classList.remove('open');
-}
-
+function closeSettings() { document.getElementById('modal-overlay').classList.remove('open'); }
 function saveSettingsFromForm() {
   const key = document.getElementById('s-apikey').value.trim();
-  const cals = parseInt(document.getElementById('s-cals').value) || 2000;
-  const protein = parseInt(document.getElementById('s-protein').value) || 150;
-  const carbs = parseInt(document.getElementById('s-carbs').value) || 200;
-  const fat = parseInt(document.getElementById('s-fat').value) || 65;
-
-  if (key && !key.startsWith('sk-ant-')) {
-    showToast('API key should start with sk-ant-');
-    return;
-  }
-  saveSettings({ apiKey: key, dailyCalorieGoal: cals, proteinGoal_g: protein, carbsGoal_g: carbs, fatGoal_g: fat });
+  if (key && !key.startsWith('sk-ant-')) { showToast('API key should start with sk-ant-'); return; }
+  saveSettings({
+    apiKey: key,
+    dailyCalorieGoal: parseInt(document.getElementById('s-cals').value) || 2000,
+    proteinGoal_g: parseInt(document.getElementById('s-protein').value) || 150,
+    carbsGoal_g: parseInt(document.getElementById('s-carbs').value) || 200,
+    fatGoal_g: parseInt(document.getElementById('s-fat').value) || 65
+  });
   closeSettings();
   showToast('Settings saved!', false);
 }
 
-// ── Event Listeners ────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-  // Tab switching
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  });
-
-  // Upload area
   const uploadArea = document.getElementById('upload-area');
-  const fileInput = document.getElementById('file-input');
+  const fileInput  = document.getElementById('file-input');
   uploadArea.addEventListener('click', () => fileInput.click());
   uploadArea.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
   fileInput.addEventListener('change', handleFileSelect);
 
-  // Clear image
   document.getElementById('clear-image').addEventListener('click', clearImage);
-
-  // Analyze button
   document.getElementById('analyze-btn').addEventListener('click', analyzeFood);
-
-  // Log entry button
   document.getElementById('log-entry-btn').addEventListener('click', logCurrentEntry);
 
-  // Log date navigation
   document.getElementById('log-prev').addEventListener('click', () => {
     logCurrentDate = dateStr(new Date(new Date(logCurrentDate + 'T12:00:00') - 86400000));
     renderLogScreen();
@@ -1048,38 +1058,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dateStr(next) <= todayStr()) { logCurrentDate = dateStr(next); renderLogScreen(); }
   });
 
-  // Log list delete (event delegation)
   document.getElementById('log-list').addEventListener('click', e => {
     const btn = e.target.closest('.entry-delete');
     if (!btn) return;
-    const id = btn.dataset.id;
-    const card = document.getElementById('ec-' + id);
-    if (card) { card.style.opacity = '0'; card.style.transition = 'opacity .2s'; }
-    setTimeout(() => { deleteEntry(id); renderLogScreen(); }, 200);
+    const card = document.getElementById('ec-' + btn.dataset.id);
+    if (card) { card.style.opacity = '0'; card.style.transform = 'translateX(20px)'; card.style.transition = 'all .2s'; }
+    setTimeout(() => { deleteEntry(btn.dataset.id); renderLogScreen(); }, 200);
   });
 
-  // Stats chart toggle
   document.getElementById('chart-toggle').addEventListener('click', e => {
-    const btn = e.target.closest('.chart-btn');
+    const btn = e.target.closest('.metric-btn');
     if (!btn) return;
     chartMetric = btn.dataset.metric;
-    document.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderStatsScreen();
   });
 
-  // Advice
   document.getElementById('advice-btn').addEventListener('click', fetchAdvice);
-
-  // Settings
   document.getElementById('settings-btn').addEventListener('click', openSettings);
-  document.getElementById('modal-close').addEventListener('click', closeSettings);
+  document.getElementById('modal-close-area')?.addEventListener('click', closeSettings);
+  document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) closeSettings(); });
   document.getElementById('save-settings-btn').addEventListener('click', saveSettingsFromForm);
-  document.getElementById('modal-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('modal-overlay')) closeSettings();
-  });
+  document.getElementById('modal').addEventListener('keydown', e => { if (e.key === 'Enter') saveSettingsFromForm(); });
 
-  // Clear data
   document.getElementById('clear-data-btn').addEventListener('click', () => {
     if (confirm('Delete ALL food log data? This cannot be undone.')) {
       localStorage.removeItem(KEYS.entries);
@@ -1088,11 +1090,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('All data cleared', false);
       renderLogScreen();
     }
-  });
-
-  // Settings form: save on Enter
-  document.getElementById('modal').addEventListener('keydown', e => {
-    if (e.key === 'Enter') saveSettingsFromForm();
   });
 });
 </script>

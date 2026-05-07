@@ -805,12 +805,12 @@ async function analyzeFood() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 512,
-      system: 'You are a nutrition analysis assistant. Respond ONLY with valid JSON, no prose, no markdown fences.',
+      system: `You are a nutrition analysis assistant with deep expertise in Indian home cooking and cuisine. You are highly familiar with dishes from all regions of India including North Indian (dal makhani, rajma, chole, paneer dishes, roti, paratha, sabzi), South Indian (idli, dosa, sambar, rasam, rice dishes, coconut-based curries), East Indian (fish curry, luchi, mishti doi), West Indian (dhokla, thepla, pav bhaji, vada), street foods (chaat, bhel puri, pani puri), and common staples (chawal, dal, sabzi, achaar, papad, raita). You understand traditional Indian cooking methods: tadka/tempering, pressure cooking, slow simmering in ghee or mustard oil. You know typical Indian home portion units: 1 katori (150–200 ml bowl) of dal/sabzi, 1 medium roti/chapati (30–35g), 1 paratha (60–80g), 1 cup cooked rice (~150–200g), 1 piece of Indian sweet. When estimating, account for the oil/ghee used in home cooking, which significantly adds calories. Respond ONLY with valid JSON, no prose, no markdown fences.`,
       messages: [{
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: pendingImage.mediaType, data: pendingImage.base64 } },
-          { type: 'text', text: 'Analyze this food image. Return ONLY a JSON object:\n{"name":"food name","description":"1-2 sentences","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion","confidence":"low|medium|high"}' }
+          { type: 'text', text: 'Analyze this food image. If it is Indian food, identify the specific dish name (e.g. "Dal Makhani", "Aloo Gobi Sabzi", "Paneer Butter Masala", "Jeera Rice") and account for typical home-cooked preparation with ghee/oil. Return ONLY a JSON object:\n{"name":"food name","description":"1-2 sentences including cooking style if Indian","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion in Indian units where applicable (e.g. 1 katori, 2 rotis)","confidence":"low|medium|high"}' }
         ]
       }]
     }, settings.apiKey);
@@ -841,10 +841,10 @@ async function lookupNutritionByName() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 400,
-      system: 'You are a nutrition database. Respond ONLY with valid JSON, no prose, no markdown.',
+      system: `You are a nutrition database with deep expertise in Indian cuisine and home cooking. You know the caloric and macronutrient content of all Indian dishes — dals (toor, moong, masoor, chana, urad), sabzis (aloo gobi, palak paneer, baingan bharta, bhindi masala), rice dishes (jeera rice, biryani, pulao, curd rice), breads (roti, chapati, paratha, puri, naan, dosa, idli), lentil dishes (sambar, rasam, rajma, chole), paneer dishes, non-veg dishes (butter chicken, mutton curry, fish curry, egg curry), snacks (poha, upma, sabudana khichdi, chivda), sweets (kheer, halwa, gulab jamun, barfi), and beverages (chai, lassi, nimbu pani). You account for home-cooking preparation: ghee used in tadka, oil for deep frying, coconut milk in South Indian dishes, cream in restaurant-style curries vs lighter home versions. Use Indian portion units where natural: 1 katori (~150ml bowl), 1 medium roti (30g), 1 paratha (70g), 1 cup cooked rice (200g). Respond ONLY with valid JSON, no prose, no markdown.`,
       messages: [{
         role: 'user',
-        content: `Give me the nutritional info for: "${name}". Assume a standard single serving. Return ONLY JSON:\n{"name":"full food name","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"standard portion description"}`
+        content: `Give me the nutritional info for: "${name}". If this is an Indian dish, use typical home-cooked preparation (not restaurant). Assume a standard single Indian home serving. Return ONLY JSON:\n{"name":"full food name","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion in Indian units where applicable"}`
       }]
     }, settings.apiKey);
 
@@ -879,10 +879,10 @@ async function fetchAdvice() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 700,
-      system: 'You are a helpful nutrition coach. Be warm, concise, and actionable. Use simple markdown: ## for headings, ** for bold, - for bullets.',
+      system: `You are a helpful nutrition coach who deeply understands Indian food culture and home cooking. You respect that the user eats traditional Indian food and will NOT suggest they replace Indian dishes with Western alternatives. Instead, you give advice that works within Indian cuisine — e.g. suggest adding more dal for protein, replacing maida roti with atta roti, adding a katori of curd/raita, reducing ghee quantity, adding sprouts or chana, choosing steamed idli over fried puri. You understand Indian meal patterns (breakfast, lunch, dinner + chai times), common ingredients (ghee, mustard oil, coconut oil, turmeric, spices), and the nutritional profile of Indian staples. Be warm, practical, and culturally sensitive. Use simple markdown: ## for headings, ** for bold, - for bullets.`,
       messages: [{
         role: 'user',
-        content: `My food log (last 7 days):\n\n${summary}\n\nMy daily goals: ${settings.dailyCalorieGoal} kcal, ${settings.proteinGoal_g}g protein, ${settings.carbsGoal_g}g carbs, ${settings.fatGoal_g}g fat.\n\nGive me:\n1. 2-3 key observations\n2. 2-3 specific, actionable improvements\n3. One thing I'm doing well\n\nUnder 300 words.`
+        content: `My food log (last 7 days):\n\n${summary}\n\nMy daily goals: ${settings.dailyCalorieGoal} kcal, ${settings.proteinGoal_g}g protein, ${settings.carbsGoal_g}g carbs, ${settings.fatGoal_g}g fat.\n\nI eat traditional Indian home-cooked food. Give me:\n1. 2-3 key observations about my eating patterns\n2. 2-3 specific, actionable improvements that work within Indian cuisine\n3. One thing I'm doing well\n\nUnder 300 words. Keep suggestions realistic for Indian home cooking.`
       }]
     }, settings.apiKey);
     saveAdviceCache(text);

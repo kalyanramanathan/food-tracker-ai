@@ -617,6 +617,18 @@ input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: non
       <div class="form-group"><label>Carbs (g)</label><input type="number" id="s-carbs" placeholder="200"></div>
       <div class="form-group"><label>Fat (g)</label><input type="number" id="s-fat" placeholder="65"></div>
     </div>
+    <div class="modal-divider"></div>
+    <h2 style="font-size:.85rem;margin-bottom:14px;">⏱️ Intermittent Fasting</h2>
+    <div class="form-row" style="grid-template-columns:1fr 1fr;">
+      <div class="form-group">
+        <label>Eating Window Start</label>
+        <input type="time" id="s-if-start" value="12:00">
+      </div>
+      <div class="form-group">
+        <label>Eating Window End</label>
+        <input type="time" id="s-if-end" value="20:00">
+      </div>
+    </div>
     <button class="btn btn-primary" id="save-settings-btn" style="margin-bottom:10px;">Save Settings</button>
     <div class="modal-divider"></div>
     <button class="btn btn-danger" id="clear-data-btn">🗑️ Clear All Data</button>
@@ -650,7 +662,7 @@ function pruneOldEntries() {
 }
 
 function getSettings() {
-  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65 };
+  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65, ifStart: 12, ifEnd: 20 };
   try { return Object.assign({}, d, JSON.parse(localStorage.getItem(KEYS.settings) || '{}')); } catch { return d; }
 }
 function saveSettings(p) { localStorage.setItem(KEYS.settings, JSON.stringify(Object.assign(getSettings(), p))); }
@@ -702,12 +714,16 @@ let pendingResult = null;
 let baseResult   = null;   // unscaled AI result for portion slider
 let portionMult  = 1;
 
-// ── IF window: eating 12:00–20:00, fasting 20:00–12:00 ──
-const IF_START = 12, IF_END = 20;   // 12 noon – 8 pm
+// ── IF window (configurable via settings) ──────────────
+function getIFWindow() {
+  const s = getSettings();
+  return { start: s.ifStart ?? 12, end: s.ifEnd ?? 20 };
+}
 
 function isInEatingWindow(ts) {
+  const { start, end } = getIFWindow();
   const h = new Date(ts).getHours() + new Date(ts).getMinutes() / 60;
-  return h >= IF_START && h < IF_END;
+  return start < end ? (h >= start && h < end) : (h >= start || h < end);
 }
 
 function minsUntil(targetHour) {
@@ -738,14 +754,17 @@ function getIFAdherence(nDays) {
 }
 
 function renderIFCard() {
+  const { start, end } = getIFWindow();
   const now = new Date();
   const inWindow = isInEatingWindow(now.getTime());
+  const fmtHour = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:00 ${ampm}`; };
+  const windowLabel = `${fmtHour(start)} – ${fmtHour(end)}`;
   document.getElementById('if-dot').className   = `if-dot ${inWindow ? 'eating' : 'fasting'}`;
   document.getElementById('if-title').textContent = inWindow ? '🟢 Eating Window Open' : '🔴 Fasting';
-  const minsTill = inWindow ? minsUntil(IF_END) : minsUntil(IF_START);
+  const minsTill = inWindow ? minsUntil(end) : minsUntil(start);
   document.getElementById('if-subtitle').textContent = inWindow
-    ? `Window closes in ${fmtMins(minsTill)} · 12:00 PM – 8:00 PM`
-    : `Window opens in ${fmtMins(minsTill)} · 12:00 PM – 8:00 PM`;
+    ? `Window closes in ${fmtMins(minsTill)} · ${windowLabel}`
+    : `Window opens in ${fmtMins(minsTill)} · ${windowLabel}`;
   const { good, total } = getIFAdherence(7);
   const badge = document.getElementById('if-badge');
   badge.textContent = total > 0 ? `${good}/${total} days` : 'No data';
@@ -1416,11 +1435,13 @@ function switchTab(name) {
 
 function openSettings() {
   const s = getSettings();
-  document.getElementById('s-apikey').value  = s.apiKey || '';
-  document.getElementById('s-cals').value    = s.dailyCalorieGoal;
-  document.getElementById('s-protein').value = s.proteinGoal_g;
-  document.getElementById('s-carbs').value   = s.carbsGoal_g;
-  document.getElementById('s-fat').value     = s.fatGoal_g;
+  document.getElementById('s-apikey').value   = s.apiKey || '';
+  document.getElementById('s-cals').value     = s.dailyCalorieGoal;
+  document.getElementById('s-protein').value  = s.proteinGoal_g;
+  document.getElementById('s-carbs').value    = s.carbsGoal_g;
+  document.getElementById('s-fat').value      = s.fatGoal_g;
+  document.getElementById('s-if-start').value = String(s.ifStart).padStart(2,'0') + ':00';
+  document.getElementById('s-if-end').value   = String(s.ifEnd).padStart(2,'0') + ':00';
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeSettings() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -1432,8 +1453,11 @@ function saveSettingsFromForm() {
     dailyCalorieGoal: parseInt(document.getElementById('s-cals').value)    || 2000,
     proteinGoal_g:    parseInt(document.getElementById('s-protein').value) || 150,
     carbsGoal_g:      parseInt(document.getElementById('s-carbs').value)   || 200,
-    fatGoal_g:        parseInt(document.getElementById('s-fat').value)     || 65
+    fatGoal_g:        parseInt(document.getElementById('s-fat').value)     || 65,
+    ifStart: parseInt((document.getElementById('s-if-start').value || '12:00').split(':')[0]),
+    ifEnd:   parseInt((document.getElementById('s-if-end').value   || '20:00').split(':')[0]),
   });
+  renderIFCard();
   closeSettings();
   showToast('Settings saved!', false);
 }

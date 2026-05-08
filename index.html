@@ -162,6 +162,7 @@ header {
   font-size: .68rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: 1px; color: var(--muted); margin-bottom: 10px;
 }
+/* edit-form chips stay horizontal */
 .chips-scroll {
   display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
   margin-bottom: 14px; scrollbar-width: none;
@@ -176,6 +177,40 @@ header {
 .food-chip .chip-name { font-size: .8rem; font-weight: 700; margin-bottom: 1px; }
 .food-chip .chip-cal  { font-size: .68rem; color: var(--muted); }
 .food-chip:hover, .food-chip.selected { border-color: var(--primary); background: rgba(245,166,35,.1); }
+
+/* Quick-add vertical list (analyze screen only) */
+.quick-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.quick-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  cursor: pointer; transition: all .18s;
+}
+.quick-row:active { transform: scale(.98); }
+.quick-row:hover  { border-color: var(--primary); background: rgba(245,166,35,.07); }
+.quick-row-icon { font-size: 1.4rem; flex-shrink: 0; }
+.quick-row-info { flex: 1; min-width: 0; }
+.quick-row-name { font-size: .88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quick-row-meta { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+.quick-row-cals { font-size: .82rem; font-weight: 800; color: var(--primary); flex-shrink: 0; }
+
+/* Recipe modal */
+#recipe-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 300; align-items: flex-end; justify-content: center; }
+#recipe-modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+#recipe-modal { background: var(--surface); width: 100%; max-width: 430px; border-radius: 24px 24px 0 0; padding: 0 18px 40px; max-height: 88vh; overflow-y: auto; animation: slideUpModal .25s cubic-bezier(.4,0,.2,1); border-top: 1px solid var(--border); }
+.recipe-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--card2); margin: 12px auto 16px; }
+.recipe-modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.recipe-title { font-size: 1.05rem; font-weight: 800; flex: 1; padding-right: 12px; }
+.recipe-close { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 2px; }
+.recipe-source { font-size: .68rem; color: var(--muted); margin-bottom: 16px; }
+.recipe-section { font-size: .7rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: .8px; margin: 16px 0 8px; }
+.recipe-ingredients { list-style: none; padding: 0; margin: 0 0 4px; }
+.recipe-ingredients li { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .88rem; display: flex; gap: 8px; }
+.recipe-ingredients li:last-child { border-bottom: none; }
+.recipe-measure { color: var(--primary); font-weight: 700; flex-shrink: 0; min-width: 64px; }
+.recipe-steps { font-size: .87rem; color: var(--muted); line-height: 1.7; white-space: pre-wrap; }
+.recipe-actions { display: flex; gap: 8px; margin-top: 20px; }
+.recipe-actions .btn { flex: 1; }
 
 /* ══════════════════════════
    ANALYZE TAB
@@ -466,6 +501,7 @@ input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: non
           <div class="food-desc-display" id="r-desc"></div>
           <div class="result-actions">
             <button class="btn btn-ghost" id="edit-result-btn">✏️ Edit</button>
+            <button class="btn btn-ghost" id="recipe-btn"><span class="btn-text">🍳 Recipe</span></button>
             <button class="btn btn-primary" id="log-entry-btn"><span class="btn-text">📋 Log</span></button>
           </div>
         </div>
@@ -526,9 +562,9 @@ input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: non
       <!-- Divider -->
       <div class="divider-row" id="manual-divider"><span>or quick-add from history</span></div>
 
-      <!-- History quick-add chips -->
+      <!-- History quick-add vertical list -->
       <div id="quick-add-section" style="display:none;">
-        <div class="chips-scroll" id="quick-add-chips"></div>
+        <div class="quick-list" id="quick-add-chips"></div>
       </div>
 
     </section>
@@ -632,6 +668,21 @@ input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: non
     <button class="btn btn-primary" id="save-settings-btn" style="margin-bottom:10px;">Save Settings</button>
     <div class="modal-divider"></div>
     <button class="btn btn-danger" id="clear-data-btn">🗑️ Clear All Data</button>
+  </div>
+</div>
+
+<div id="recipe-modal-overlay">
+  <div id="recipe-modal">
+    <div class="recipe-handle"></div>
+    <div class="recipe-modal-header">
+      <div class="recipe-title" id="recipe-modal-title"></div>
+      <button class="recipe-close" id="recipe-close-btn">✕</button>
+    </div>
+    <div class="recipe-source" id="recipe-modal-source"></div>
+    <div id="recipe-modal-body"></div>
+    <div class="recipe-actions">
+      <button class="btn btn-ghost" id="recipe-copy-btn">📋 Copy Recipe</button>
+    </div>
   </div>
 </div>
 
@@ -971,11 +1022,17 @@ function showQuickAdd() {
   const section = document.getElementById('quick-add-section');
   const container = document.getElementById('quick-add-chips');
   section.style.display = 'block';
-  container.innerHTML = foods.map(f => `
-    <div class="food-chip" data-food='${JSON.stringify({name:f.name,calories:f.calories,protein_g:f.protein_g,carbs_g:f.carbs_g,fat_g:f.fat_g,serving_note:f.serving_note,confidence:"high",description:f.description})}'>
-      <div class="chip-name">${f.name}</div>
-      <div class="chip-cal">${f.calories} kcal · ${f.count}× logged</div>
-    </div>`).join('');
+  container.innerHTML = foods.map(f => {
+    const data = JSON.stringify({name:f.name,calories:f.calories,protein_g:f.protein_g,carbs_g:f.carbs_g,fat_g:f.fat_g,serving_note:f.serving_note,confidence:'high',description:f.description});
+    return `<div class="quick-row" data-food='${data}'>
+      <div class="quick-row-icon">🍽️</div>
+      <div class="quick-row-info">
+        <div class="quick-row-name">${f.name}</div>
+        <div class="quick-row-meta">P ${f.protein_g}g · C ${f.carbs_g}g · F ${f.fat_g}g · logged ${f.count}×</div>
+      </div>
+      <div class="quick-row-cals">${f.calories}<br><span style="font-size:.6rem;font-weight:600;color:var(--muted)">kcal</span></div>
+    </div>`;
+  }).join('');
 }
 
 function hideQuickAdd() {
@@ -1171,6 +1228,90 @@ function buildLogSummary(entries, settings) {
   return Object.entries(byDay).sort(([a],[b]) => a < b ? 1 : -1).map(([date, d]) =>
     `${formatDateLabel(date)}: ${Math.round(d.cals)} kcal | P:${Math.round(d.protein)}g C:${Math.round(d.carbs)}g F:${Math.round(d.fat)}g | ${d.foods.slice(0,4).join(', ')}`
   ).join('\n');
+}
+
+// ── Recipe ─────────────────────────────────────────────
+let recipePlainText = '';   // for copy button
+
+async function fetchAndShowRecipe(foodName) {
+  if (!foodName) return;
+  openRecipeModal(foodName, null, 'loading');
+
+  // 1. Try TheMealDB (free, no key, CORS-ok)
+  try {
+    const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(foodName)}`);
+    const data = await res.json();
+    if (data.meals && data.meals.length) {
+      const m = data.meals[0];
+      const ingredients = [];
+      for (let i = 1; i <= 20; i++) {
+        const ing = m[`strIngredient${i}`], meas = m[`strMeasure${i}`];
+        if (ing && ing.trim()) ingredients.push({ ingredient: ing.trim(), measure: (meas || '').trim() });
+      }
+      const recipe = { name: m.strMeal, source: 'TheMealDB', ingredients, instructions: m.strInstructions || '' };
+      openRecipeModal(foodName, recipe, 'done');
+      return;
+    }
+  } catch {}
+
+  // 2. Fall back to Claude AI
+  const settings = getSettings();
+  if (!settings.apiKey) { openRecipeModal(foodName, null, 'no-key'); return; }
+  try {
+    const text = await callClaude({
+      model: MODEL, max_tokens: 900,
+      system: 'You are a recipe expert specialising in Indian home cooking. Respond ONLY with valid JSON, no prose, no markdown fences.',
+      messages: [{ role: 'user', content: `Give me a simple home recipe for: "${foodName}". Return ONLY JSON:\n{"name":"dish name","ingredients":[{"measure":"qty","ingredient":"name"}],"instructions":"step by step instructions as a single string with newlines between steps"}` }]
+    }, settings.apiKey);
+    let recipe;
+    try { recipe = JSON.parse(text); } catch { const m = text.match(/\{[\s\S]*\}/); if (m) recipe = JSON.parse(m[0]); else throw new Error(); }
+    recipe.source = 'AI Generated';
+    openRecipeModal(foodName, recipe, 'done');
+  } catch {
+    openRecipeModal(foodName, null, 'error');
+  }
+}
+
+function openRecipeModal(foodName, recipe, state) {
+  const overlay = document.getElementById('recipe-modal-overlay');
+  const title   = document.getElementById('recipe-modal-title');
+  const source  = document.getElementById('recipe-modal-source');
+  const body    = document.getElementById('recipe-modal-body');
+
+  title.textContent = recipe ? recipe.name : foodName;
+
+  if (state === 'loading') {
+    source.textContent = '';
+    body.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:.88rem;"><div class="spinner light"></div> Fetching recipe…</div>`;
+    recipePlainText = '';
+  } else if (state === 'no-key') {
+    source.textContent = '';
+    body.innerHTML = `<p style="color:var(--muted);font-size:.88rem;">Add your API key in Settings to generate recipes with AI.</p>`;
+  } else if (state === 'error') {
+    source.textContent = '';
+    body.innerHTML = `<p style="color:var(--muted);font-size:.88rem;">Couldn't find a recipe. Try editing the food name and searching again.</p>`;
+  } else {
+    source.textContent = `Source: ${recipe.source}`;
+    const ingHTML = recipe.ingredients.map(i =>
+      `<li><span class="recipe-measure">${i.measure}</span>${i.ingredient}</li>`
+    ).join('');
+    body.innerHTML = `
+      <div class="recipe-section">Ingredients</div>
+      <ul class="recipe-ingredients">${ingHTML}</ul>
+      <div class="recipe-section">Instructions</div>
+      <div class="recipe-steps">${recipe.instructions.replace(/\n/g,'<br>')}</div>`;
+
+    // Build plain text for copy
+    recipePlainText = `${recipe.name}\n\nIngredients:\n` +
+      recipe.ingredients.map(i => `${i.measure} ${i.ingredient}`).join('\n') +
+      `\n\nInstructions:\n${recipe.instructions}`;
+  }
+
+  overlay.classList.add('open');
+}
+
+function closeRecipeModal() {
+  document.getElementById('recipe-modal-overlay').classList.remove('open');
 }
 
 // ── Rendering ──────────────────────────────────────────
@@ -1485,6 +1626,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('log-entry-btn').addEventListener('click', logCurrentEntry);
   document.getElementById('edit-result-btn').addEventListener('click', openEditMode);
   document.getElementById('cancel-edit-btn').addEventListener('click', closeEditMode);
+  document.getElementById('recipe-btn').addEventListener('click', () => {
+    if (pendingResult) fetchAndShowRecipe(pendingResult.name);
+  });
+
+  // Recipe modal
+  document.getElementById('recipe-close-btn').addEventListener('click', closeRecipeModal);
+  document.getElementById('recipe-modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('recipe-modal-overlay')) closeRecipeModal(); });
+  document.getElementById('recipe-copy-btn').addEventListener('click', () => {
+    if (!recipePlainText) return;
+    navigator.clipboard.writeText(recipePlainText).then(() => showToast('Recipe copied!', false)).catch(() => showToast('Copy failed'));
+  });
 
   // Edit form
   document.getElementById('lookup-btn').addEventListener('click', lookupNutritionByName);
@@ -1502,11 +1654,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
   });
 
-  // Quick-add chips (event delegation)
+  // Quick-add rows (event delegation)
   document.getElementById('quick-add-chips').addEventListener('click', e => {
-    const chip = e.target.closest('.food-chip');
-    if (!chip) return;
-    try { logQuickAdd(JSON.parse(chip.dataset.food)); } catch {}
+    const row = e.target.closest('.quick-row');
+    if (!row) return;
+    try { logQuickAdd(JSON.parse(row.dataset.food)); } catch {}
   });
 
   // Log date nav

@@ -372,6 +372,43 @@ header {
 .form-group input:focus { border-color: var(--primary); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .modal-divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* ── IF Tracker ── */
+.if-card { background: var(--card); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
+.if-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .5s, box-shadow .5s; }
+.if-dot.eating { background: #27ae60; box-shadow: 0 0 7px #27ae6099; }
+.if-dot.fasting { background: var(--primary); box-shadow: 0 0 7px rgba(245,166,35,.55); }
+.if-info { flex: 1; min-width: 0; }
+.if-title { font-size: .82rem; font-weight: 800; }
+.if-subtitle { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.if-badge { font-size: .68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+.if-badge.good { background: rgba(39,174,96,.15); color: #27ae60; }
+.if-badge.warn { background: rgba(245,166,35,.15); color: var(--primary); }
+.if-badge.none { background: rgba(255,255,255,.05); color: var(--muted); }
+.entry-outside-win { font-size: .63rem; color: #e74c3c; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
+
+/* ── Portion slider ── */
+.portion-row { margin: 14px 0 4px; }
+.portion-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.portion-label-text { font-size: .68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.portion-mult { font-size: .95rem; font-weight: 800; color: var(--primary); }
+input[type=range].portion-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: 0 0 8px rgba(245,166,35,.45); }
+
+/* ── Weekly Report ── */
+.weekly-card { background: linear-gradient(135deg, rgba(245,166,35,.08) 0%, var(--card) 100%); border: 1px solid rgba(245,166,35,.3); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; animation: slideUp .3s ease; }
+.weekly-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.weekly-title { font-size: .95rem; font-weight: 800; }
+.weekly-sub { font-size: .7rem; color: var(--muted); margin-top: 3px; }
+.weekly-dismiss { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.weekly-dismiss:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.weekly-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.weekly-tile { background: rgba(255,255,255,.04); border-radius: 10px; padding: 10px 12px; }
+.weekly-tile-val { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+.weekly-tile-label { font-size: .63rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+.weekly-section-title { font-size: .68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+.weekly-food-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.weekly-food-tag { background: rgba(255,255,255,.06); border-radius: 20px; padding: 4px 10px; font-size: .72rem; }
 </style>
 </head>
 <body>
@@ -419,6 +456,13 @@ header {
             <div class="calorie-unit">kcal</div>
           </div>
           <div class="macro-rings" id="r-rings"></div>
+          <div class="portion-row" id="portion-row">
+            <div class="portion-label">
+              <span class="portion-label-text">Portion Size</span>
+              <span class="portion-mult" id="portion-display">1×</span>
+            </div>
+            <input type="range" class="portion-slider" id="portion-slider" min="0.25" max="3" step="0.25" value="1">
+          </div>
           <div class="food-desc-display" id="r-desc"></div>
           <div class="result-actions">
             <button class="btn btn-ghost" id="edit-result-btn">✏️ Edit</button>
@@ -491,6 +535,15 @@ header {
 
     <!-- ── LOG ── -->
     <section class="screen" id="screen-log">
+      <!-- IF status card -->
+      <div class="if-card" id="if-card">
+        <div class="if-dot" id="if-dot"></div>
+        <div class="if-info">
+          <div class="if-title" id="if-title"></div>
+          <div class="if-subtitle" id="if-subtitle"></div>
+        </div>
+        <div class="if-badge" id="if-badge"></div>
+      </div>
       <div class="date-nav">
         <button class="date-nav-btn" id="log-prev">‹</button>
         <span id="log-date-label">Today</span>
@@ -509,6 +562,7 @@ header {
 
     <!-- ── STATS ── -->
     <section class="screen" id="screen-stats">
+      <div id="weekly-report-wrap"></div>
       <div class="metric-tabs" id="chart-toggle">
         <button class="metric-btn cal active" data-metric="calories">🔥 Cal</button>
         <button class="metric-btn protein" data-metric="protein">💪 Pro</button>
@@ -645,6 +699,197 @@ function showToast(msg, isError = true) {
 // ── Image handling ─────────────────────────────────────
 let pendingImage = null;
 let pendingResult = null;
+let baseResult   = null;   // unscaled AI result for portion slider
+let portionMult  = 1;
+
+// ── IF window: eating 12:00–20:00, fasting 20:00–12:00 ──
+const IF_START = 12, IF_END = 20;   // 12 noon – 8 pm
+
+function isInEatingWindow(ts) {
+  const h = new Date(ts).getHours() + new Date(ts).getMinutes() / 60;
+  return h >= IF_START && h < IF_END;
+}
+
+function minsUntil(targetHour) {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(targetHour, 0, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  return Math.round((target - now) / 60000);
+}
+
+function fmtMins(m) {
+  const h = Math.floor(m / 60), mn = m % 60;
+  return h > 0 ? `${h}h ${mn}m` : `${mn}m`;
+}
+
+function getIFAdherence(nDays) {
+  const allEntries = getEntries();
+  let good = 0, total = 0;
+  for (let i = 0; i < nDays; i++) {
+    const d = new Date(Date.now() - i * 86400000);
+    const ds = dateStr(d);
+    const dayEntries = allEntries.filter(e => e.date === ds);
+    if (!dayEntries.length) continue;
+    total++;
+    if (dayEntries.every(e => isInEatingWindow(e.timestamp))) good++;
+  }
+  return { good, total };
+}
+
+function renderIFCard() {
+  const now = new Date();
+  const inWindow = isInEatingWindow(now.getTime());
+  document.getElementById('if-dot').className   = `if-dot ${inWindow ? 'eating' : 'fasting'}`;
+  document.getElementById('if-title').textContent = inWindow ? '🟢 Eating Window Open' : '🔴 Fasting';
+  const minsTill = inWindow ? minsUntil(IF_END) : minsUntil(IF_START);
+  document.getElementById('if-subtitle').textContent = inWindow
+    ? `Window closes in ${fmtMins(minsTill)} · 12:00 PM – 8:00 PM`
+    : `Window opens in ${fmtMins(minsTill)} · 12:00 PM – 8:00 PM`;
+  const { good, total } = getIFAdherence(7);
+  const badge = document.getElementById('if-badge');
+  badge.textContent = total > 0 ? `${good}/${total} days` : 'No data';
+  badge.className = `if-badge ${total === 0 ? 'none' : good === total ? 'good' : 'warn'}`;
+}
+
+// ── Portion slider ─────────────────────────────────────
+function applyPortion(mult) {
+  if (!baseResult) return;
+  portionMult = mult;
+  document.getElementById('portion-display').textContent = mult === 1 ? '1×' : `${mult}×`;
+  pendingResult = {
+    ...baseResult,
+    calories:  Math.round((baseResult.calories  || 0) * mult),
+    protein_g: Math.round((baseResult.protein_g || 0) * mult * 10) / 10,
+    carbs_g:   Math.round((baseResult.carbs_g   || 0) * mult * 10) / 10,
+    fat_g:     Math.round((baseResult.fat_g     || 0) * mult * 10) / 10,
+  };
+  document.getElementById('r-cals').textContent = pendingResult.calories;
+  // update rings
+  const total = pendingResult.protein_g + pendingResult.carbs_g + pendingResult.fat_g;
+  const C = 2 * Math.PI * 27;
+  const rings = [
+    { label:'Protein', val: pendingResult.protein_g, cls:'protein', color:'var(--protein)' },
+    { label:'Carbs',   val: pendingResult.carbs_g,   cls:'carbs',   color:'var(--carbs)' },
+    { label:'Fat',     val: pendingResult.fat_g,     cls:'fat',     color:'var(--fat)' },
+  ];
+  document.getElementById('r-rings').innerHTML = rings.map(ring => {
+    const pct = total > 0 ? ring.val / total : 0;
+    const dash = C * pct, gap = C - dash;
+    return `<div class="ring-item">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 64 64" width="64" height="64">
+          <circle class="ring-bg" cx="32" cy="32" r="27"/>
+          <circle class="ring-fill ${ring.cls}" cx="32" cy="32" r="27"
+            stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-label">
+          <span class="ring-val" style="color:${ring.color}">${ring.val}g</span>
+        </div>
+      </div>
+      <div class="ring-name">${ring.label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Weekly Sunday Report ───────────────────────────────
+const WEEKLY_KEY = 'foodlog_weekly_report';
+
+function getWeekKey() {
+  // Key = Monday's date of the week being reported (Mon–Sat before the Sunday)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const lastMon = new Date(now - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) * 86400000);
+  return dateStr(lastMon);
+}
+
+function checkWeeklyReport() {
+  const now = new Date();
+  if (now.getDay() !== 0) return;   // only on Sundays
+  const weekKey = getWeekKey();
+  const stored = (() => { try { return JSON.parse(localStorage.getItem(WEEKLY_KEY)) || {}; } catch { return {}; } })();
+  if (stored.weekKey === weekKey && stored.dismissed) return;
+  if (stored.weekKey !== weekKey) {
+    // fresh week — build report
+    const report = buildWeeklyReport(weekKey);
+    localStorage.setItem(WEEKLY_KEY, JSON.stringify({ weekKey, dismissed: false, report }));
+    renderWeeklyReport(report, weekKey);
+  } else {
+    renderWeeklyReport(stored.report, weekKey);
+  }
+}
+
+function buildWeeklyReport(mondayStr) {
+  const start = new Date(mondayStr + 'T00:00:00');
+  const allEntries = getEntries();
+  const weekEntries = [];
+  for (let i = 0; i < 7; i++) {
+    const d = dateStr(new Date(start.getTime() + i * 86400000));
+    allEntries.filter(e => e.date === d).forEach(e => weekEntries.push(e));
+  }
+  const uniqueDays = new Set(weekEntries.map(e => e.date)).size;
+  const totalCals = weekEntries.reduce((s, e) => s + (e.calories || 0), 0);
+  const totalProt = weekEntries.reduce((s, e) => s + (e.protein_g || 0), 0);
+  const totalCarbs = weekEntries.reduce((s, e) => s + (e.carbs_g || 0), 0);
+  const totalFat  = weekEntries.reduce((s, e) => s + (e.fat_g || 0), 0);
+  const avgCals = uniqueDays > 0 ? Math.round(totalCals / uniqueDays) : 0;
+  // IF adherence for the week
+  let ifGood = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = dateStr(new Date(start.getTime() + i * 86400000));
+    const day = weekEntries.filter(e => e.date === d);
+    if (day.length > 0 && day.every(e => isInEatingWindow(e.timestamp))) ifGood++;
+  }
+  // top foods
+  const freq = {};
+  weekEntries.forEach(e => {
+    const k = e.name.toLowerCase();
+    freq[k] = (freq[k] || { name: e.name, count: 0 });
+    freq[k].count++;
+  });
+  const topFoods = Object.values(freq).sort((a, b) => b.count - a.count).slice(0, 6).map(f => f.name);
+  return {
+    uniqueDays, totalMeals: weekEntries.length, avgCals,
+    avgProt: uniqueDays > 0 ? Math.round(totalProt / uniqueDays) : 0,
+    avgCarbs: uniqueDays > 0 ? Math.round(totalCarbs / uniqueDays) : 0,
+    avgFat: uniqueDays > 0 ? Math.round(totalFat / uniqueDays) : 0,
+    ifGood, topFoods
+  };
+}
+
+function renderWeeklyReport(report, weekKey) {
+  const wrap = document.getElementById('weekly-report-wrap');
+  if (!wrap || !report) return;
+  const end = new Date(new Date(weekKey + 'T00:00:00').getTime() + 6 * 86400000);
+  const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  wrap.innerHTML = `
+    <div class="weekly-card">
+      <div class="weekly-header">
+        <div>
+          <div class="weekly-title">📅 Weekly Report</div>
+          <div class="weekly-sub">${fmt(weekKey)} – ${fmt(dateStr(end))}</div>
+        </div>
+        <button class="weekly-dismiss" id="weekly-dismiss-btn" aria-label="Dismiss">✕</button>
+      </div>
+      <div class="weekly-grid">
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.avgCals}</div><div class="weekly-tile-label">Avg Cal / Day</div></div>
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.uniqueDays}/7</div><div class="weekly-tile-label">Days Logged</div></div>
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.avgProt}g</div><div class="weekly-tile-label">Avg Protein</div></div>
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.ifGood}/${report.uniqueDays || 7}</div><div class="weekly-tile-label">IF Days ✓</div></div>
+      </div>
+      ${report.topFoods.length ? `
+      <div class="weekly-top-foods">
+        <div class="weekly-section-title">Most Eaten This Week</div>
+        <div class="weekly-food-tags">${report.topFoods.map(f => `<span class="weekly-food-tag">${f}</span>`).join('')}</div>
+      </div>` : ''}
+    </div>`;
+  document.getElementById('weekly-dismiss-btn').addEventListener('click', () => {
+    const stored = (() => { try { return JSON.parse(localStorage.getItem(WEEKLY_KEY)) || {}; } catch { return {}; } })();
+    stored.dismissed = true;
+    localStorage.setItem(WEEKLY_KEY, JSON.stringify(stored));
+    wrap.innerHTML = '';
+  });
+}
 
 async function compressImage(file) {
   return new Promise((resolve, reject) => {
@@ -911,6 +1156,11 @@ function buildLogSummary(entries, settings) {
 
 // ── Rendering ──────────────────────────────────────────
 function renderAnalysisResult(r) {
+  baseResult = { ...r };   // store unscaled base
+  portionMult = 1;
+  const slider = document.getElementById('portion-slider');
+  if (slider) slider.value = 1;
+  document.getElementById('portion-display').textContent = '1×';
   document.getElementById('r-name').textContent = r.name || 'Unknown food';
   document.getElementById('r-serving').textContent = r.serving_note || '';
   document.getElementById('r-cals').textContent = r.calories || 0;
@@ -962,9 +1212,13 @@ function logCurrentEntry() {
     serving_note: pendingResult.serving_note, confidence: pendingResult.confidence
   };
   saveEntry(entry);
-  clearImage(); pendingResult = null;
+  clearImage(); pendingResult = null; baseResult = null; portionMult = 1;
   if (navigator.vibrate) navigator.vibrate(30);
-  showToast('Entry logged!', false);
+  if (!isInEatingWindow(entry.timestamp)) {
+    showToast('⚠️ Logged outside your eating window (12 PM–8 PM)');
+  } else {
+    showToast('Entry logged!', false);
+  }
   switchTab('log');
 }
 
@@ -980,6 +1234,7 @@ let logCurrentDate = todayStr();
 function renderLogScreen() {
   document.getElementById('log-date-label').textContent = formatDateLabel(logCurrentDate);
   document.getElementById('log-next').disabled = logCurrentDate >= todayStr();
+  renderIFCard();
   renderLogList(logCurrentDate);
 }
 
@@ -1003,6 +1258,7 @@ function renderLogList(ds) {
       <div class="entry-info">
         <div class="entry-name">${e.name}</div>
         <div class="entry-time">${formatTime(e.timestamp)}</div>
+        ${!isInEatingWindow(e.timestamp) ? `<div class="entry-outside-win">⚠️ Outside eating window</div>` : ''}
         <div class="macros">
           <span class="mpill cal">${e.calories} kcal</span>
           <span class="mpill protein">P ${e.protein_g}g</span>
@@ -1153,7 +1409,7 @@ function switchTab(name) {
   document.getElementById('screen-' + name).classList.add('active');
   document.querySelector(`.tab-btn[data-tab="${name}"]`).classList.add('active');
   if (name === 'log')    renderLogScreen();
-  if (name === 'stats')  renderStatsScreen();
+  if (name === 'stats')  { renderStatsScreen(); checkWeeklyReport(); }
   if (name === 'advice') renderAdviceScreen();
   if (name === 'analyze') showQuickAdd();
 }
@@ -1194,6 +1450,9 @@ document.addEventListener('DOMContentLoaded', () => {
   uploadArea.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') fileInput.click(); });
   fileInput.addEventListener('change', handleFileSelect);
   document.getElementById('clear-image').addEventListener('click', clearImage);
+
+  // Portion slider
+  document.getElementById('portion-slider').addEventListener('input', e => applyPortion(parseFloat(e.target.value)));
 
   // Analyze
   document.getElementById('analyze-btn').addEventListener('click', analyzeFood);
@@ -1273,6 +1532,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show initial quick-add
   showQuickAdd();
+
+  // IF card: initial render + live countdown update every 60s
+  renderIFCard();
+  setInterval(renderIFCard, 60000);
 });
 </script>
 </body>

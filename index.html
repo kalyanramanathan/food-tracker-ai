@@ -665,6 +665,44 @@ input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: non
       <div class="form-group"><label>Fat (g)</label><input type="number" id="s-fat" placeholder="65"></div>
     </div>
     <div class="modal-divider"></div>
+    <h2 style="font-size:.85rem;margin-bottom:14px;">🌍 Time Zone</h2>
+    <div class="form-group">
+      <label>Your Time Zone</label>
+      <select id="s-timezone" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:.95rem;outline:none;-webkit-appearance:none;appearance:none;">
+        <optgroup label="India">
+          <option value="Asia/Kolkata">India Standard Time (IST, UTC+5:30)</option>
+        </optgroup>
+        <optgroup label="United States">
+          <option value="America/New_York">Eastern Time (ET)</option>
+          <option value="America/Chicago">Central Time (CT)</option>
+          <option value="America/Denver">Mountain Time (MT)</option>
+          <option value="America/Los_Angeles">Pacific Time (PT)</option>
+          <option value="America/Phoenix">Arizona (MST, no DST)</option>
+          <option value="America/Anchorage">Alaska Time (AKT)</option>
+          <option value="Pacific/Honolulu">Hawaii Time (HST)</option>
+        </optgroup>
+        <optgroup label="Canada">
+          <option value="America/Toronto">Toronto (ET)</option>
+          <option value="America/Vancouver">Vancouver (PT)</option>
+        </optgroup>
+        <optgroup label="Europe">
+          <option value="Europe/London">London (GMT/BST)</option>
+          <option value="Europe/Paris">Paris / Berlin (CET)</option>
+          <option value="Europe/Moscow">Moscow (MSK)</option>
+        </optgroup>
+        <optgroup label="Middle East &amp; Gulf">
+          <option value="Asia/Dubai">Dubai / UAE (GST, UTC+4)</option>
+          <option value="Asia/Riyadh">Riyadh / Saudi Arabia (AST, UTC+3)</option>
+        </optgroup>
+        <optgroup label="Asia-Pacific">
+          <option value="Asia/Singapore">Singapore (SGT, UTC+8)</option>
+          <option value="Asia/Tokyo">Tokyo (JST, UTC+9)</option>
+          <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+          <option value="Pacific/Auckland">Auckland (NZST)</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="modal-divider"></div>
     <h2 style="font-size:.85rem;margin-bottom:14px;">⏱️ Intermittent Fasting</h2>
     <div class="form-row" style="grid-template-columns:1fr 1fr;">
       <div class="form-group">
@@ -724,7 +762,8 @@ function pruneOldEntries() {
 }
 
 function getSettings() {
-  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65, ifStart: 12, ifEnd: 20 };
+  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65, ifStart: 12, ifEnd: 20,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
   try { return Object.assign({}, d, JSON.parse(localStorage.getItem(KEYS.settings) || '{}')); } catch { return d; }
 }
 function saveSettings(p) { localStorage.setItem(KEYS.settings, JSON.stringify(Object.assign(getSettings(), p))); }
@@ -751,12 +790,20 @@ function getFrequentFoods(limit = 8) {
 function generateId() {
   return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
-// Always use LOCAL date — never toISOString() which returns UTC
+// Always use the configured (or browser-default) timezone — never toISOString() which is UTC
+function getTZ() { return getSettings().timezone || Intl.DateTimeFormat().resolvedOptions().timeZone; }
+
 function localDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  // Use Intl to get YYYY-MM-DD in the configured timezone
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: getTZ(), year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(d);
+  const p = {};
+  parts.forEach(({ type, value }) => { p[type] = value; });
+  return `${p.year}-${p.month}-${p.day}`;
 }
 function todayStr() { return localDateStr(new Date()); }
-function dateStr(d) { return localDateStr(d); }
+function dateStr(d)  { return localDateStr(d); }
 function formatDateLabel(s) {
   const today = todayStr(), yesterday = dateStr(new Date(Date.now() - 86400000));
   if (s === today) return 'Today';
@@ -764,12 +811,12 @@ function formatDateLabel(s) {
   return new Date(s + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 function formatTime(ts) {
-  return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return new Date(ts).toLocaleTimeString('en-US', { timeZone: getTZ(), hour: 'numeric', minute: '2-digit', hour12: true });
 }
 function formatDateTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const tz = getTZ();
+  return new Date(ts).toLocaleDateString('en-US', { timeZone: tz, month: 'short', day: 'numeric' }) +
+    ' · ' + new Date(ts).toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 let toastTimer;
@@ -1605,8 +1652,17 @@ function openSettings() {
   document.getElementById('s-protein').value  = s.proteinGoal_g;
   document.getElementById('s-carbs').value    = s.carbsGoal_g;
   document.getElementById('s-fat').value      = s.fatGoal_g;
-  document.getElementById('s-if-start').value = String(s.ifStart).padStart(2,'0') + ':00';
-  document.getElementById('s-if-end').value   = String(s.ifEnd).padStart(2,'0') + ':00';
+  document.getElementById('s-if-start').value  = String(s.ifStart).padStart(2,'0') + ':00';
+  document.getElementById('s-if-end').value    = String(s.ifEnd).padStart(2,'0') + ':00';
+  const tzSel = document.getElementById('s-timezone');
+  const tz = s.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // select matching option, or append a custom one if not in list
+  if ([...tzSel.options].some(o => o.value === tz)) {
+    tzSel.value = tz;
+  } else {
+    const opt = document.createElement('option');
+    opt.value = tz; opt.textContent = tz; tzSel.prepend(opt); tzSel.value = tz;
+  }
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeSettings() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -1619,8 +1675,9 @@ function saveSettingsFromForm() {
     proteinGoal_g:    parseInt(document.getElementById('s-protein').value) || 150,
     carbsGoal_g:      parseInt(document.getElementById('s-carbs').value)   || 200,
     fatGoal_g:        parseInt(document.getElementById('s-fat').value)     || 65,
-    ifStart: parseInt((document.getElementById('s-if-start').value || '12:00').split(':')[0]),
-    ifEnd:   parseInt((document.getElementById('s-if-end').value   || '20:00').split(':')[0]),
+    ifStart:  parseInt((document.getElementById('s-if-start').value || '12:00').split(':')[0]),
+    ifEnd:    parseInt((document.getElementById('s-if-end').value   || '20:00').split(':')[0]),
+    timezone: document.getElementById('s-timezone').value || Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
   renderIFCard();
   closeSettings();

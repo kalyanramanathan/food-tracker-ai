@@ -1235,7 +1235,7 @@ async function analyzeFood() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 512,
-      system: `You are a nutrition analysis assistant with deep expertise in Indian home cooking and cuisine. You are highly familiar with dishes from all regions of India including North Indian (dal makhani, rajma, chole, paneer dishes, roti, paratha, sabzi), South Indian (idli, dosa, sambar, rasam, rice dishes, coconut-based curries), East Indian (fish curry, luchi, mishti doi), West Indian (dhokla, thepla, pav bhaji, vada), street foods (chaat, bhel puri, pani puri), and common staples (chawal, dal, sabzi, achaar, papad, raita). You understand traditional Indian cooking methods: tadka/tempering, pressure cooking, slow simmering in ghee or mustard oil. You know typical Indian home portion units: 1 katori (150–200 ml bowl) of dal/sabzi, 1 medium roti/chapati (30–35g), 1 paratha (60–80g), 1 cup cooked rice (~150–200g), 1 piece of Indian sweet. When estimating, account for the oil/ghee used in home cooking, which significantly adds calories. Respond ONLY with valid JSON, no prose, no markdown fences.`,
+      system: `You are a nutrition analysis assistant with dual expertise in Indian home cooking and US restaurant/everyday food. For Indian food: identify regional dishes precisely (North Indian — dal makhani, rajma, chole, paneer, roti, paratha, sabzi; South Indian — idli, dosa, sambar, rasam, coconut curries; street food — chaat, bhel puri, pani puri; sweets — kheer, halwa, gulab jamun). Account for ghee/oil in home cooking. Use Indian portion units: 1 katori (150–200 ml), 1 roti (30–35g), 1 paratha (60–80g), 1 cup cooked rice (150–200g). For US food: identify items from major chains (McDonald's, Chipotle, Starbucks, Chick-fil-A, Subway, Panera, Olive Garden, Cheesecake Factory, Shake Shack, Domino's, Panda Express, etc.) and everyday American food (burgers, sandwiches, salads, pizza, pasta, BBQ, tacos, sushi, breakfast items). Use standard US serving sizes and published chain nutrition data when applicable. Respond ONLY with valid JSON, no prose, no markdown fences.`,
       messages: [{
         role: 'user',
         content: [
@@ -1271,10 +1271,10 @@ async function lookupNutritionByName() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 400,
-      system: `You are a nutrition database with deep expertise in Indian cuisine and home cooking. You know the caloric and macronutrient content of all Indian dishes — dals (toor, moong, masoor, chana, urad), sabzis (aloo gobi, palak paneer, baingan bharta, bhindi masala), rice dishes (jeera rice, biryani, pulao, curd rice), breads (roti, chapati, paratha, puri, naan, dosa, idli), lentil dishes (sambar, rasam, rajma, chole), paneer dishes, non-veg dishes (butter chicken, mutton curry, fish curry, egg curry), snacks (poha, upma, sabudana khichdi, chivda), sweets (kheer, halwa, gulab jamun, barfi), and beverages (chai, lassi, nimbu pani). You account for home-cooking preparation: ghee used in tadka, oil for deep frying, coconut milk in South Indian dishes, cream in restaurant-style curries vs lighter home versions. Use Indian portion units where natural: 1 katori (~150ml bowl), 1 medium roti (30g), 1 paratha (70g), 1 cup cooked rice (200g). Respond ONLY with valid JSON, no prose, no markdown.`,
+      system: `You are a comprehensive nutrition database expert in both Indian cuisine and US food. For Indian dishes: use home-cooking preparation with ghee/oil, Indian portion units (1 katori ~150ml, 1 roti 30–35g, 1 paratha 70g, 1 cup cooked rice 200g). For US chain restaurant items: use published nutrition data — McDonald's, Chipotle, Starbucks, Chick-fil-A, Subway, Panera, Domino's, Taco Bell, Panda Express, Shake Shack, Wendy's, Burger King, Olive Garden, Cheesecake Factory, etc. For general US food: use USDA standard portions. Respond ONLY with valid JSON, no prose, no markdown.`,
       messages: [{
         role: 'user',
-        content: `Give me the nutritional info for: "${name}". If this is an Indian dish, use typical home-cooked preparation (not restaurant). Assume a standard single Indian home serving. Return ONLY JSON:\n{"name":"full food name","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion in Indian units where applicable"}`
+        content: `Give me the nutritional info for: "${name}". Use the most accurate source — Indian home-cooking values if Indian, published chain data if a US restaurant item, or USDA data otherwise. Return ONLY JSON:\n{"name":"full food name","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion description"}`
       }]
     }, settings.apiKey);
 
@@ -1359,7 +1359,7 @@ async function detectNearbyRestaurants() {
     const { latitude: lat, longitude: lng } = pos.coords;
 
     // Overpass API — free, no key, CORS-enabled — restaurants within 500m
-    const q = `[out:json][timeout:15];(node["amenity"~"^(restaurant|fast_food|cafe|food_court)$"](around:500,${lat},${lng});way["amenity"~"^(restaurant|fast_food|cafe|food_court)$"](around:500,${lat},${lng}););out tags center 12;`;
+    const q = `[out:json][timeout:15];(node["amenity"~"^(restaurant|fast_food|cafe|food_court|bar)$"](around:800,${lat},${lng});way["amenity"~"^(restaurant|fast_food|cafe|food_court|bar)$"](around:800,${lat},${lng}););out tags center 15;`;
     const res = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST', body: q
     });
@@ -1425,14 +1425,14 @@ async function refineWithRestaurant(restaurantName, cuisine) {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 500,
-      system: 'You are a restaurant nutrition expert. Respond ONLY with valid JSON, no prose, no markdown fences.',
+      system: `You are a restaurant nutrition expert with comprehensive knowledge of both US and Indian restaurants. For US chains you know exact published nutrition data: McDonald's (Big Mac 550 kcal, McChicken 400 kcal, large fries 490 kcal), Chipotle (burrito bowl ~800-1000 kcal, chicken bowl ~700 kcal), Starbucks (Grande Latte 250 kcal, Frappuccino ~400 kcal), Chick-fil-A (sandwich 440 kcal, nuggets 8pc 260 kcal), Subway (6" Turkey 280 kcal, footlong ~560 kcal), Panera (You Pick Two ~600-900 kcal), Olive Garden (Never Ending Pasta ~900+ kcal), Cheesecake Factory (known for large high-calorie portions), Shake Shack (ShackBurger 500 kcal), Domino's (2 slices pepperoni ~570 kcal), Panda Express (Orange Chicken per serving 490 kcal), Taco Bell (Crunchwrap Supreme 530 kcal), Wendy's (Dave's Single 570 kcal), Burger King (Whopper 657 kcal), Dunkin (Medium Latte 260 kcal), and hundreds more. For Indian chains: Saravana Bhavan, Haldiram's, Barbeque Nation, etc. Use official published nutrition wherever available. Respond ONLY with valid JSON, no prose, no markdown fences.`,
       messages: [{ role: 'user', content:
-        `The user is at "${restaurantName}" (${formatCuisine(cuisine||'restaurant')} restaurant) and ordered something that looks like "${pendingResult.name}" (${pendingResult.calories} kcal estimated from a photo).
+        `The user is at "${restaurantName}" (${formatCuisine(cuisine||'restaurant')}) and ordered something that looks like "${pendingResult.name}" (photo-estimated ${pendingResult.calories} kcal).
 
-Identify the closest matching menu item at this restaurant and provide accurate nutrition for that specific restaurant's version (accounting for their portion sizes, preparation style, ingredients).
+Match this to the closest item on ${restaurantName}'s actual menu. Use their published nutrition data if you know it. Account for their specific portion sizes, preparation, and ingredients.
 
 Return ONLY JSON:
-{"name":"exact or closest menu item name","calories":int,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"serving size at this restaurant","confidence":"low|medium|high","match_note":"one sentence: what matched and any key difference in calories/portions"}`
+{"name":"exact menu item name at this restaurant","calories":int,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"exact serving size (e.g. 'Large, 16 oz', '2 slices', 'burrito bowl with chicken')","confidence":"low|medium|high","match_note":"one sentence: matched item name + whether calories are higher/lower than photo estimate and why"}`
       }]
     }, settings.apiKey);
 

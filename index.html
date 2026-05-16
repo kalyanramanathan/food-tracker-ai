@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Food Tracker AI</title>
+<title>PlateIQ</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -73,9 +73,22 @@ header {
   font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
   padding: 8px 4px; border-radius: 12px; transition: color .2s; position: relative;
 }
-.tab-btn .tab-icon { font-size: 1.35rem; line-height: 1; transition: transform .2s; }
+.tab-btn .tab-icon {
+  font-size: 1.25rem; line-height: 1;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.10);
+  transition: transform .2s, background .2s, border-color .2s, box-shadow .2s;
+}
 .tab-btn.active { color: var(--primary); }
-.tab-btn.active .tab-icon { transform: scale(1.12); }
+.tab-btn.active .tab-icon {
+  transform: scale(1.08);
+  background: rgba(245,166,35,0.15);
+  border-color: rgba(245,166,35,0.45);
+  box-shadow: 0 0 10px rgba(245,166,35,0.25);
+}
 .tab-dot {
   position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
   width: 4px; height: 4px; border-radius: 2px; background: var(--primary);
@@ -149,6 +162,7 @@ header {
   font-size: .68rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: 1px; color: var(--muted); margin-bottom: 10px;
 }
+/* edit-form chips stay horizontal */
 .chips-scroll {
   display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
   margin-bottom: 14px; scrollbar-width: none;
@@ -163,6 +177,40 @@ header {
 .food-chip .chip-name { font-size: .8rem; font-weight: 700; margin-bottom: 1px; }
 .food-chip .chip-cal  { font-size: .68rem; color: var(--muted); }
 .food-chip:hover, .food-chip.selected { border-color: var(--primary); background: rgba(245,166,35,.1); }
+
+/* Quick-add vertical list (analyze screen only) */
+.quick-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.quick-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  cursor: pointer; transition: all .18s;
+}
+.quick-row:active { transform: scale(.98); }
+.quick-row:hover  { border-color: var(--primary); background: rgba(245,166,35,.07); }
+.quick-row-icon { font-size: 1.4rem; flex-shrink: 0; }
+.quick-row-info { flex: 1; min-width: 0; }
+.quick-row-name { font-size: .88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quick-row-meta { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+.quick-row-cals { font-size: .82rem; font-weight: 800; color: var(--primary); flex-shrink: 0; }
+
+/* Recipe modal */
+#recipe-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 300; align-items: flex-end; justify-content: center; }
+#recipe-modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+#recipe-modal { background: var(--surface); width: 100%; max-width: 430px; border-radius: 24px 24px 0 0; padding: 0 18px 40px; max-height: 88vh; overflow-y: auto; animation: slideUpModal .25s cubic-bezier(.4,0,.2,1); border-top: 1px solid var(--border); }
+.recipe-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--card2); margin: 12px auto 16px; }
+.recipe-modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.recipe-title { font-size: 1.05rem; font-weight: 800; flex: 1; padding-right: 12px; }
+.recipe-close { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 2px; }
+.recipe-source { font-size: .68rem; color: var(--muted); margin-bottom: 16px; }
+.recipe-section { font-size: .7rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: .8px; margin: 16px 0 8px; }
+.recipe-ingredients { list-style: none; padding: 0; margin: 0 0 4px; }
+.recipe-ingredients li { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .88rem; display: flex; gap: 8px; }
+.recipe-ingredients li:last-child { border-bottom: none; }
+.recipe-measure { color: var(--primary); font-weight: 700; flex-shrink: 0; min-width: 64px; }
+.recipe-steps { font-size: .87rem; color: var(--muted); line-height: 1.7; white-space: pre-wrap; }
+.recipe-actions { display: flex; gap: 8px; margin-top: 20px; }
+.recipe-actions .btn { flex: 1; }
 
 /* ══════════════════════════
    ANALYZE TAB
@@ -280,6 +328,14 @@ header {
 .date-nav-btn:hover:not(:disabled) { background: var(--card2); color: var(--text); }
 .date-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
 #log-date-label { font-weight: 700; font-size: .95rem; }
+#today-btn {
+  display: none; background: rgba(245,166,35,.15); border: 1px solid rgba(245,166,35,.4);
+  color: var(--primary); font-size: .68rem; font-weight: 800; padding: 4px 10px;
+  border-radius: 20px; cursor: pointer; letter-spacing: .4px; white-space: nowrap;
+  transition: all .2s;
+}
+#today-btn:hover { background: rgba(245,166,35,.25); }
+#today-btn.visible { display: inline-block; }
 
 .entry-card { background: var(--card); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 12px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; animation: slideUp .25s ease; transition: opacity .2s, transform .2s; }
 .entry-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex-shrink: 0; background: var(--card2); }
@@ -359,12 +415,67 @@ header {
 .form-group input:focus { border-color: var(--primary); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .modal-divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* ── IF Tracker ── */
+.if-card { background: var(--card); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
+.if-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .5s, box-shadow .5s; }
+.if-dot.eating { background: #27ae60; box-shadow: 0 0 7px #27ae6099; }
+.if-dot.fasting { background: var(--primary); box-shadow: 0 0 7px rgba(245,166,35,.55); }
+.if-info { flex: 1; min-width: 0; }
+.if-title { font-size: .82rem; font-weight: 800; }
+.if-subtitle { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.if-badge { font-size: .68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+.if-badge.good { background: rgba(39,174,96,.15); color: #27ae60; }
+.if-badge.warn { background: rgba(245,166,35,.15); color: var(--primary); }
+.if-badge.none { background: rgba(255,255,255,.05); color: var(--muted); }
+.entry-outside-win { font-size: .63rem; color: #e74c3c; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
+
+/* ── Portion slider ── */
+.portion-row { margin: 14px 0 4px; }
+.portion-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.portion-label-text { font-size: .68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.portion-mult { font-size: .95rem; font-weight: 800; color: var(--primary); }
+input[type=range].portion-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: 0 0 8px rgba(245,166,35,.45); }
+
+/* ── Nearby Restaurant ── */
+.geo-trigger { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.geo-trigger-label { font-size: .72rem; color: var(--muted); }
+.geo-btn { background: none; border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: .72rem; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .2s; white-space: nowrap; }
+.geo-btn:hover { border-color: var(--primary); color: var(--primary); }
+#geo-section { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.geo-section-label { font-size: .68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.geo-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; padding: 0; }
+.restaurant-item { width: 100%; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 7px; display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; transition: all .18s; }
+.restaurant-item:hover, .restaurant-item.selected { border-color: var(--primary); background: rgba(245,166,35,.07); }
+.restaurant-icon { font-size: 1.3rem; flex-shrink: 0; }
+.restaurant-info { flex: 1; min-width: 0; }
+.restaurant-name { font-size: .85rem; font-weight: 700; }
+.restaurant-cuisine { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+.restaurant-arrow { color: var(--muted); font-size: .9rem; }
+.restaurant-badge { display: flex; align-items: center; gap: 8px; background: rgba(39,174,96,.1); border: 1px solid rgba(39,174,96,.3); border-radius: 20px; padding: 5px 12px; margin-bottom: 10px; font-size: .72rem; font-weight: 700; color: #27ae60; }
+.geo-manual-row { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ── Weekly Report ── */
+.weekly-card { background: linear-gradient(135deg, rgba(245,166,35,.08) 0%, var(--card) 100%); border: 1px solid rgba(245,166,35,.3); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; animation: slideUp .3s ease; }
+.weekly-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.weekly-title { font-size: .95rem; font-weight: 800; }
+.weekly-sub { font-size: .7rem; color: var(--muted); margin-top: 3px; }
+.weekly-dismiss { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.weekly-dismiss:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.weekly-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.weekly-tile { background: rgba(255,255,255,.04); border-radius: 10px; padding: 10px 12px; }
+.weekly-tile-val { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+.weekly-tile-label { font-size: .63rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+.weekly-section-title { font-size: .68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+.weekly-food-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.weekly-food-tag { background: rgba(255,255,255,.06); border-radius: 20px; padding: 4px 10px; font-size: .72rem; }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="logo">Food <span>Tracker</span> AI</div>
+    <div class="logo">Plate<span>IQ</span></div>
     <button id="settings-btn" aria-label="Settings">⚙️</button>
   </header>
 
@@ -406,10 +517,38 @@ header {
             <div class="calorie-unit">kcal</div>
           </div>
           <div class="macro-rings" id="r-rings"></div>
+          <div class="portion-row" id="portion-row">
+            <div class="portion-label">
+              <span class="portion-label-text">Portion Size</span>
+              <span class="portion-mult" id="portion-display">1×</span>
+            </div>
+            <input type="range" class="portion-slider" id="portion-slider" min="0.25" max="3" step="0.25" value="1">
+          </div>
           <div class="food-desc-display" id="r-desc"></div>
           <div class="result-actions">
             <button class="btn btn-ghost" id="edit-result-btn">✏️ Edit</button>
+            <button class="btn btn-ghost" id="recipe-btn"><span class="btn-text">🍳 Recipe</span></button>
             <button class="btn btn-primary" id="log-entry-btn"><span class="btn-text">📋 Log</span></button>
+          </div>
+
+          <!-- Restaurant detection -->
+          <div id="restaurant-badge" style="display:none;" class="restaurant-badge"></div>
+          <div class="geo-trigger">
+            <span class="geo-trigger-label">At a restaurant?</span>
+            <button class="geo-btn" id="geo-btn">
+              <span class="btn-text">📍 Detect nearby</span>
+            </button>
+          </div>
+          <div id="geo-section" style="display:none;">
+            <div class="geo-section-label">
+              <span>Nearby restaurants</span>
+              <button class="geo-close" id="geo-close">✕</button>
+            </div>
+            <div id="restaurant-list"></div>
+            <div class="geo-manual-row">
+              <input class="edit-field" id="manual-restaurant" type="text" placeholder="Or type restaurant name…" style="margin-bottom:0;flex:1;">
+              <button class="btn btn-secondary btn-sm" id="manual-restaurant-btn" style="flex-shrink:0;"><span class="btn-text">→</span></button>
+            </div>
           </div>
         </div>
 
@@ -469,18 +608,30 @@ header {
       <!-- Divider -->
       <div class="divider-row" id="manual-divider"><span>or quick-add from history</span></div>
 
-      <!-- History quick-add chips -->
+      <!-- History quick-add vertical list -->
       <div id="quick-add-section" style="display:none;">
-        <div class="chips-scroll" id="quick-add-chips"></div>
+        <div class="quick-list" id="quick-add-chips"></div>
       </div>
 
     </section>
 
     <!-- ── LOG ── -->
     <section class="screen" id="screen-log">
+      <!-- IF status card -->
+      <div class="if-card" id="if-card">
+        <div class="if-dot" id="if-dot"></div>
+        <div class="if-info">
+          <div class="if-title" id="if-title"></div>
+          <div class="if-subtitle" id="if-subtitle"></div>
+        </div>
+        <div class="if-badge" id="if-badge"></div>
+      </div>
       <div class="date-nav">
         <button class="date-nav-btn" id="log-prev">‹</button>
-        <span id="log-date-label">Today</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span id="log-date-label">Today</span>
+          <button id="today-btn">↩ Today</button>
+        </div>
         <button class="date-nav-btn" id="log-next">›</button>
       </div>
       <div id="log-list"></div>
@@ -496,6 +647,7 @@ header {
 
     <!-- ── STATS ── -->
     <section class="screen" id="screen-stats">
+      <div id="weekly-report-wrap"></div>
       <div class="metric-tabs" id="chart-toggle">
         <button class="metric-btn cal active" data-metric="calories">🔥 Cal</button>
         <button class="metric-btn protein" data-metric="protein">💪 Pro</button>
@@ -525,10 +677,10 @@ header {
   </div>
 
   <nav id="tab-bar">
-    <button class="tab-btn active" data-tab="analyze"><span class="tab-icon">📷</span>Analyze<span class="tab-dot"></span></button>
-    <button class="tab-btn" data-tab="log"><span class="tab-icon">📋</span>Log<span class="tab-dot"></span></button>
-    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span>Stats<span class="tab-dot"></span></button>
-    <button class="tab-btn" data-tab="advice"><span class="tab-icon">🤖</span>Advice<span class="tab-dot"></span></button>
+    <button class="tab-btn active" data-tab="analyze"><span class="tab-icon">🍽️</span>Analyze<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="log"><span class="tab-icon">📅</span>Log<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📈</span>Stats<span class="tab-dot"></span></button>
+    <button class="tab-btn" data-tab="advice"><span class="tab-icon">💡</span>Advice<span class="tab-dot"></span></button>
   </nav>
 </div>
 
@@ -550,9 +702,74 @@ header {
       <div class="form-group"><label>Carbs (g)</label><input type="number" id="s-carbs" placeholder="200"></div>
       <div class="form-group"><label>Fat (g)</label><input type="number" id="s-fat" placeholder="65"></div>
     </div>
+    <div class="modal-divider"></div>
+    <h2 style="font-size:.85rem;margin-bottom:14px;">🌍 Time Zone</h2>
+    <div class="form-group">
+      <label>Your Time Zone</label>
+      <select id="s-timezone" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:.95rem;outline:none;-webkit-appearance:none;appearance:none;">
+        <optgroup label="India">
+          <option value="Asia/Kolkata">India Standard Time (IST, UTC+5:30)</option>
+        </optgroup>
+        <optgroup label="United States">
+          <option value="America/New_York">Eastern Time (ET)</option>
+          <option value="America/Chicago">Central Time (CT)</option>
+          <option value="America/Denver">Mountain Time (MT)</option>
+          <option value="America/Los_Angeles">Pacific Time (PT)</option>
+          <option value="America/Phoenix">Arizona (MST, no DST)</option>
+          <option value="America/Anchorage">Alaska Time (AKT)</option>
+          <option value="Pacific/Honolulu">Hawaii Time (HST)</option>
+        </optgroup>
+        <optgroup label="Canada">
+          <option value="America/Toronto">Toronto (ET)</option>
+          <option value="America/Vancouver">Vancouver (PT)</option>
+        </optgroup>
+        <optgroup label="Europe">
+          <option value="Europe/London">London (GMT/BST)</option>
+          <option value="Europe/Paris">Paris / Berlin (CET)</option>
+          <option value="Europe/Moscow">Moscow (MSK)</option>
+        </optgroup>
+        <optgroup label="Middle East &amp; Gulf">
+          <option value="Asia/Dubai">Dubai / UAE (GST, UTC+4)</option>
+          <option value="Asia/Riyadh">Riyadh / Saudi Arabia (AST, UTC+3)</option>
+        </optgroup>
+        <optgroup label="Asia-Pacific">
+          <option value="Asia/Singapore">Singapore (SGT, UTC+8)</option>
+          <option value="Asia/Tokyo">Tokyo (JST, UTC+9)</option>
+          <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+          <option value="Pacific/Auckland">Auckland (NZST)</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="modal-divider"></div>
+    <h2 style="font-size:.85rem;margin-bottom:14px;">⏱️ Intermittent Fasting</h2>
+    <div class="form-row" style="grid-template-columns:1fr 1fr;">
+      <div class="form-group">
+        <label>Eating Window Start</label>
+        <input type="time" id="s-if-start" value="12:00">
+      </div>
+      <div class="form-group">
+        <label>Eating Window End</label>
+        <input type="time" id="s-if-end" value="20:00">
+      </div>
+    </div>
     <button class="btn btn-primary" id="save-settings-btn" style="margin-bottom:10px;">Save Settings</button>
     <div class="modal-divider"></div>
     <button class="btn btn-danger" id="clear-data-btn">🗑️ Clear All Data</button>
+  </div>
+</div>
+
+<div id="recipe-modal-overlay">
+  <div id="recipe-modal">
+    <div class="recipe-handle"></div>
+    <div class="recipe-modal-header">
+      <div class="recipe-title" id="recipe-modal-title"></div>
+      <button class="recipe-close" id="recipe-close-btn">✕</button>
+    </div>
+    <div class="recipe-source" id="recipe-modal-source"></div>
+    <div id="recipe-modal-body"></div>
+    <div class="recipe-actions">
+      <button class="btn btn-ghost" id="recipe-copy-btn">📋 Copy Recipe</button>
+    </div>
   </div>
 </div>
 
@@ -583,7 +800,8 @@ function pruneOldEntries() {
 }
 
 function getSettings() {
-  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65 };
+  const d = { apiKey: '', dailyCalorieGoal: 2000, proteinGoal_g: 150, carbsGoal_g: 200, fatGoal_g: 65, ifStart: 12, ifEnd: 20,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
   try { return Object.assign({}, d, JSON.parse(localStorage.getItem(KEYS.settings) || '{}')); } catch { return d; }
 }
 function saveSettings(p) { localStorage.setItem(KEYS.settings, JSON.stringify(Object.assign(getSettings(), p))); }
@@ -602,7 +820,7 @@ function getFrequentFoods(limit = 8) {
     if (e.timestamp > freq[key].timestamp) Object.assign(freq[key], e);
   });
   return Object.values(freq)
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => b.timestamp - a.timestamp)  // latest logged first
     .slice(0, limit);
 }
 
@@ -610,15 +828,34 @@ function getFrequentFoods(limit = 8) {
 function generateId() {
   return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-function dateStr(d) { return d.toISOString().slice(0, 10); }
+// Always use the configured (or browser-default) timezone — never toISOString() which is UTC
+function getTZ() { return getSettings().timezone || Intl.DateTimeFormat().resolvedOptions().timeZone; }
+
+function localDateStr(d) {
+  // Use Intl to get YYYY-MM-DD in the configured timezone
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: getTZ(), year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(d);
+  const p = {};
+  parts.forEach(({ type, value }) => { p[type] = value; });
+  return `${p.year}-${p.month}-${p.day}`;
+}
+function todayStr() { return localDateStr(new Date()); }
+function dateStr(d)  { return localDateStr(d); }
 function formatDateLabel(s) {
   const today = todayStr(), yesterday = dateStr(new Date(Date.now() - 86400000));
   if (s === today) return 'Today';
   if (s === yesterday) return 'Yesterday';
   return new Date(s + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
-function formatTime(ts) { return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString('en-US', { timeZone: getTZ(), hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function formatDateTime(ts) {
+  const tz = getTZ();
+  return new Date(ts).toLocaleDateString('en-US', { timeZone: tz, month: 'short', day: 'numeric' }) +
+    ' · ' + new Date(ts).toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+}
 
 let toastTimer;
 function showToast(msg, isError = true) {
@@ -632,6 +869,204 @@ function showToast(msg, isError = true) {
 // ── Image handling ─────────────────────────────────────
 let pendingImage = null;
 let pendingResult = null;
+let baseResult   = null;   // unscaled AI result for portion slider
+let portionMult  = 1;
+
+// ── IF window (configurable via settings) ──────────────
+function getIFWindow() {
+  const s = getSettings();
+  return { start: s.ifStart ?? 12, end: s.ifEnd ?? 20 };
+}
+
+function isInEatingWindow(ts) {
+  const { start, end } = getIFWindow();
+  const h = new Date(ts).getHours() + new Date(ts).getMinutes() / 60;
+  return start < end ? (h >= start && h < end) : (h >= start || h < end);
+}
+
+function minsUntil(targetHour) {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(targetHour, 0, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  return Math.round((target - now) / 60000);
+}
+
+function fmtMins(m) {
+  const h = Math.floor(m / 60), mn = m % 60;
+  return h > 0 ? `${h}h ${mn}m` : `${mn}m`;
+}
+
+function getIFAdherence(nDays) {
+  const allEntries = getEntries();
+  let good = 0, total = 0;
+  for (let i = 0; i < nDays; i++) {
+    const d = new Date(Date.now() - i * 86400000);
+    const ds = dateStr(d);
+    const dayEntries = allEntries.filter(e => e.date === ds);
+    if (!dayEntries.length) continue;
+    total++;
+    if (dayEntries.every(e => isInEatingWindow(e.timestamp))) good++;
+  }
+  return { good, total };
+}
+
+function renderIFCard() {
+  const { start, end } = getIFWindow();
+  const now = new Date();
+  const inWindow = isInEatingWindow(now.getTime());
+  const fmtHour = h => { const ampm = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:00 ${ampm}`; };
+  const windowLabel = `${fmtHour(start)} – ${fmtHour(end)}`;
+  document.getElementById('if-dot').className   = `if-dot ${inWindow ? 'eating' : 'fasting'}`;
+  document.getElementById('if-title').textContent = inWindow ? '🟢 Eating Window Open' : '🔴 Fasting';
+  const minsTill = inWindow ? minsUntil(end) : minsUntil(start);
+  document.getElementById('if-subtitle').textContent = inWindow
+    ? `Window closes in ${fmtMins(minsTill)} · ${windowLabel}`
+    : `Window opens in ${fmtMins(minsTill)} · ${windowLabel}`;
+  const { good, total } = getIFAdherence(7);
+  const badge = document.getElementById('if-badge');
+  badge.textContent = total > 0 ? `${good}/${total} days` : 'No data';
+  badge.className = `if-badge ${total === 0 ? 'none' : good === total ? 'good' : 'warn'}`;
+}
+
+// ── Portion slider ─────────────────────────────────────
+function applyPortion(mult) {
+  if (!baseResult) return;
+  portionMult = mult;
+  document.getElementById('portion-display').textContent = mult === 1 ? '1×' : `${mult}×`;
+  pendingResult = {
+    ...baseResult,
+    calories:  Math.round((baseResult.calories  || 0) * mult),
+    protein_g: Math.round((baseResult.protein_g || 0) * mult * 10) / 10,
+    carbs_g:   Math.round((baseResult.carbs_g   || 0) * mult * 10) / 10,
+    fat_g:     Math.round((baseResult.fat_g     || 0) * mult * 10) / 10,
+  };
+  document.getElementById('r-cals').textContent = pendingResult.calories;
+  // update rings
+  const total = pendingResult.protein_g + pendingResult.carbs_g + pendingResult.fat_g;
+  const C = 2 * Math.PI * 27;
+  const rings = [
+    { label:'Protein', val: pendingResult.protein_g, cls:'protein', color:'var(--protein)' },
+    { label:'Carbs',   val: pendingResult.carbs_g,   cls:'carbs',   color:'var(--carbs)' },
+    { label:'Fat',     val: pendingResult.fat_g,     cls:'fat',     color:'var(--fat)' },
+  ];
+  document.getElementById('r-rings').innerHTML = rings.map(ring => {
+    const pct = total > 0 ? ring.val / total : 0;
+    const dash = C * pct, gap = C - dash;
+    return `<div class="ring-item">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 64 64" width="64" height="64">
+          <circle class="ring-bg" cx="32" cy="32" r="27"/>
+          <circle class="ring-fill ${ring.cls}" cx="32" cy="32" r="27"
+            stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-label">
+          <span class="ring-val" style="color:${ring.color}">${ring.val}g</span>
+        </div>
+      </div>
+      <div class="ring-name">${ring.label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Weekly Sunday Report ───────────────────────────────
+const WEEKLY_KEY = 'foodlog_weekly_report';
+
+function getWeekKey() {
+  // Key = Monday's date of the week being reported (Mon–Sat before the Sunday)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const lastMon = new Date(now - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) * 86400000);
+  return dateStr(lastMon);
+}
+
+function checkWeeklyReport() {
+  const now = new Date();
+  if (now.getDay() !== 0) return;   // only on Sundays
+  const weekKey = getWeekKey();
+  const stored = (() => { try { return JSON.parse(localStorage.getItem(WEEKLY_KEY)) || {}; } catch { return {}; } })();
+  if (stored.weekKey === weekKey && stored.dismissed) return;
+  if (stored.weekKey !== weekKey) {
+    // fresh week — build report
+    const report = buildWeeklyReport(weekKey);
+    localStorage.setItem(WEEKLY_KEY, JSON.stringify({ weekKey, dismissed: false, report }));
+    renderWeeklyReport(report, weekKey);
+  } else {
+    renderWeeklyReport(stored.report, weekKey);
+  }
+}
+
+function buildWeeklyReport(mondayStr) {
+  const start = new Date(mondayStr + 'T00:00:00');
+  const allEntries = getEntries();
+  const weekEntries = [];
+  for (let i = 0; i < 7; i++) {
+    const d = dateStr(new Date(start.getTime() + i * 86400000));
+    allEntries.filter(e => e.date === d).forEach(e => weekEntries.push(e));
+  }
+  const uniqueDays = new Set(weekEntries.map(e => e.date)).size;
+  const totalCals = weekEntries.reduce((s, e) => s + (e.calories || 0), 0);
+  const totalProt = weekEntries.reduce((s, e) => s + (e.protein_g || 0), 0);
+  const totalCarbs = weekEntries.reduce((s, e) => s + (e.carbs_g || 0), 0);
+  const totalFat  = weekEntries.reduce((s, e) => s + (e.fat_g || 0), 0);
+  const avgCals = uniqueDays > 0 ? Math.round(totalCals / uniqueDays) : 0;
+  // IF adherence for the week
+  let ifGood = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = dateStr(new Date(start.getTime() + i * 86400000));
+    const day = weekEntries.filter(e => e.date === d);
+    if (day.length > 0 && day.every(e => isInEatingWindow(e.timestamp))) ifGood++;
+  }
+  // top foods
+  const freq = {};
+  weekEntries.forEach(e => {
+    const k = e.name.toLowerCase();
+    freq[k] = (freq[k] || { name: e.name, count: 0 });
+    freq[k].count++;
+  });
+  const topFoods = Object.values(freq).sort((a, b) => b.count - a.count).slice(0, 6).map(f => f.name);
+  return {
+    uniqueDays, totalMeals: weekEntries.length, avgCals,
+    avgProt: uniqueDays > 0 ? Math.round(totalProt / uniqueDays) : 0,
+    avgCarbs: uniqueDays > 0 ? Math.round(totalCarbs / uniqueDays) : 0,
+    avgFat: uniqueDays > 0 ? Math.round(totalFat / uniqueDays) : 0,
+    ifGood, topFoods
+  };
+}
+
+function renderWeeklyReport(report, weekKey) {
+  const wrap = document.getElementById('weekly-report-wrap');
+  if (!wrap || !report) return;
+  const end = new Date(new Date(weekKey + 'T00:00:00').getTime() + 6 * 86400000);
+  const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  wrap.innerHTML = `
+    <div class="weekly-card">
+      <div class="weekly-header">
+        <div>
+          <div class="weekly-title">📅 Weekly Report</div>
+          <div class="weekly-sub">${fmt(weekKey)} – ${fmt(dateStr(end))}</div>
+        </div>
+        <button class="weekly-dismiss" id="weekly-dismiss-btn" aria-label="Dismiss">✕</button>
+      </div>
+      <div class="weekly-grid">
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.avgCals}</div><div class="weekly-tile-label">Avg Cal / Day</div></div>
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.uniqueDays}/7</div><div class="weekly-tile-label">Days Logged</div></div>
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.avgProt}g</div><div class="weekly-tile-label">Avg Protein</div></div>
+        <div class="weekly-tile"><div class="weekly-tile-val">${report.ifGood}/${report.uniqueDays || 7}</div><div class="weekly-tile-label">IF Days ✓</div></div>
+      </div>
+      ${report.topFoods.length ? `
+      <div class="weekly-top-foods">
+        <div class="weekly-section-title">Most Eaten This Week</div>
+        <div class="weekly-food-tags">${report.topFoods.map(f => `<span class="weekly-food-tag">${f}</span>`).join('')}</div>
+      </div>` : ''}
+    </div>`;
+  document.getElementById('weekly-dismiss-btn').addEventListener('click', () => {
+    const stored = (() => { try { return JSON.parse(localStorage.getItem(WEEKLY_KEY)) || {}; } catch { return {}; } })();
+    stored.dismissed = true;
+    localStorage.setItem(WEEKLY_KEY, JSON.stringify(stored));
+    wrap.innerHTML = '';
+  });
+}
 
 async function compressImage(file) {
   return new Promise((resolve, reject) => {
@@ -678,11 +1113,13 @@ function handleFileSelect(e) {
 }
 
 function clearImage() {
-  pendingImage = null; pendingResult = null;
+  pendingImage = null; pendingResult = null; baseResult = null; portionMult = 1;
   document.getElementById('preview-wrap').style.display = 'none';
   document.getElementById('upload-area').style.display = 'block';
   document.getElementById('analyze-btn').disabled = true;
   document.getElementById('result-card').style.display = 'none';
+  document.getElementById('geo-section').style.display = 'none';
+  document.getElementById('restaurant-badge').style.display = 'none';
   showQuickAdd();
 }
 
@@ -694,11 +1131,17 @@ function showQuickAdd() {
   const section = document.getElementById('quick-add-section');
   const container = document.getElementById('quick-add-chips');
   section.style.display = 'block';
-  container.innerHTML = foods.map(f => `
-    <div class="food-chip" data-food='${JSON.stringify({name:f.name,calories:f.calories,protein_g:f.protein_g,carbs_g:f.carbs_g,fat_g:f.fat_g,serving_note:f.serving_note,confidence:"high",description:f.description})}'>
-      <div class="chip-name">${f.name}</div>
-      <div class="chip-cal">${f.calories} kcal · ${f.count}× logged</div>
-    </div>`).join('');
+  container.innerHTML = foods.map(f => {
+    const data = JSON.stringify({name:f.name,calories:f.calories,protein_g:f.protein_g,carbs_g:f.carbs_g,fat_g:f.fat_g,serving_note:f.serving_note,confidence:'high',description:f.description});
+    return `<div class="quick-row" data-food='${data}'>
+      <div class="quick-row-icon">🍽️</div>
+      <div class="quick-row-info">
+        <div class="quick-row-name">${f.name}</div>
+        <div class="quick-row-meta">P ${f.protein_g}g · C ${f.carbs_g}g · F ${f.fat_g}g · logged ${f.count}×</div>
+      </div>
+      <div class="quick-row-cals">${f.calories}<br><span style="font-size:.6rem;font-weight:600;color:var(--muted)">kcal</span></div>
+    </div>`;
+  }).join('');
 }
 
 function hideQuickAdd() {
@@ -792,12 +1235,12 @@ async function analyzeFood() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 512,
-      system: 'You are a nutrition analysis assistant. Respond ONLY with valid JSON, no prose, no markdown fences.',
+      system: `You are a nutrition analysis assistant with dual expertise in Indian home cooking and US restaurant/everyday food. For Indian food: identify regional dishes precisely (North Indian — dal makhani, rajma, chole, paneer, roti, paratha, sabzi; South Indian — idli, dosa, sambar, rasam, coconut curries; street food — chaat, bhel puri, pani puri; sweets — kheer, halwa, gulab jamun). Account for ghee/oil in home cooking. Use Indian portion units: 1 katori (150–200 ml), 1 roti (30–35g), 1 paratha (60–80g), 1 cup cooked rice (150–200g). For US food: identify items from major chains (McDonald's, Chipotle, Starbucks, Chick-fil-A, Subway, Panera, Olive Garden, Cheesecake Factory, Shake Shack, Domino's, Panda Express, etc.) and everyday American food (burgers, sandwiches, salads, pizza, pasta, BBQ, tacos, sushi, breakfast items). Use standard US serving sizes and published chain nutrition data when applicable. Respond ONLY with valid JSON, no prose, no markdown fences.`,
       messages: [{
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: pendingImage.mediaType, data: pendingImage.base64 } },
-          { type: 'text', text: 'Analyze this food image. Return ONLY a JSON object:\n{"name":"food name","description":"1-2 sentences","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion","confidence":"low|medium|high"}' }
+          { type: 'text', text: 'Analyze this food image. If it is Indian food, identify the specific dish name (e.g. "Dal Makhani", "Aloo Gobi Sabzi", "Paneer Butter Masala", "Jeera Rice") and account for typical home-cooked preparation with ghee/oil. Return ONLY a JSON object:\n{"name":"food name","description":"1-2 sentences including cooking style if Indian","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion in Indian units where applicable (e.g. 1 katori, 2 rotis)","confidence":"low|medium|high"}' }
         ]
       }]
     }, settings.apiKey);
@@ -828,10 +1271,10 @@ async function lookupNutritionByName() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 400,
-      system: 'You are a nutrition database. Respond ONLY with valid JSON, no prose, no markdown.',
+      system: `You are a comprehensive nutrition database expert in both Indian cuisine and US food. For Indian dishes: use home-cooking preparation with ghee/oil, Indian portion units (1 katori ~150ml, 1 roti 30–35g, 1 paratha 70g, 1 cup cooked rice 200g). For US chain restaurant items: use published nutrition data — McDonald's, Chipotle, Starbucks, Chick-fil-A, Subway, Panera, Domino's, Taco Bell, Panda Express, Shake Shack, Wendy's, Burger King, Olive Garden, Cheesecake Factory, etc. For general US food: use USDA standard portions. Respond ONLY with valid JSON, no prose, no markdown.`,
       messages: [{
         role: 'user',
-        content: `Give me the nutritional info for: "${name}". Assume a standard single serving. Return ONLY JSON:\n{"name":"full food name","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"standard portion description"}`
+        content: `Give me the nutritional info for: "${name}". Use the most accurate source — Indian home-cooking values if Indian, published chain data if a US restaurant item, or USDA data otherwise. Return ONLY JSON:\n{"name":"full food name","calories":integer,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"portion description"}`
       }]
     }, settings.apiKey);
 
@@ -866,10 +1309,10 @@ async function fetchAdvice() {
   try {
     const text = await callClaude({
       model: MODEL, max_tokens: 700,
-      system: 'You are a helpful nutrition coach. Be warm, concise, and actionable. Use simple markdown: ## for headings, ** for bold, - for bullets.',
+      system: `You are a helpful nutrition coach who deeply understands Indian food culture and home cooking. You respect that the user eats traditional Indian food and will NOT suggest they replace Indian dishes with Western alternatives. Instead, you give advice that works within Indian cuisine — e.g. suggest adding more dal for protein, replacing maida roti with atta roti, adding a katori of curd/raita, reducing ghee quantity, adding sprouts or chana, choosing steamed idli over fried puri. You understand Indian meal patterns (breakfast, lunch, dinner + chai times), common ingredients (ghee, mustard oil, coconut oil, turmeric, spices), and the nutritional profile of Indian staples. Be warm, practical, and culturally sensitive. Use simple markdown: ## for headings, ** for bold, - for bullets.`,
       messages: [{
         role: 'user',
-        content: `My food log (last 7 days):\n\n${summary}\n\nMy daily goals: ${settings.dailyCalorieGoal} kcal, ${settings.proteinGoal_g}g protein, ${settings.carbsGoal_g}g carbs, ${settings.fatGoal_g}g fat.\n\nGive me:\n1. 2-3 key observations\n2. 2-3 specific, actionable improvements\n3. One thing I'm doing well\n\nUnder 300 words.`
+        content: `My food log (last 7 days):\n\n${summary}\n\nMy daily goals: ${settings.dailyCalorieGoal} kcal, ${settings.proteinGoal_g}g protein, ${settings.carbsGoal_g}g carbs, ${settings.fatGoal_g}g fat.\n\nI eat traditional Indian home-cooked food. Give me:\n1. 2-3 key observations about my eating patterns\n2. 2-3 specific, actionable improvements that work within Indian cuisine\n3. One thing I'm doing well\n\nUnder 300 words. Keep suggestions realistic for Indian home cooking.`
       }]
     }, settings.apiKey);
     saveAdviceCache(text);
@@ -896,8 +1339,228 @@ function buildLogSummary(entries, settings) {
   ).join('\n');
 }
 
+// ── Nearby Restaurant ──────────────────────────────────
+function restaurantEmoji(amenity) {
+  return amenity === 'cafe' ? '☕' : amenity === 'fast_food' ? '🍟' : amenity === 'food_court' ? '🏬' : '🍽️';
+}
+function formatCuisine(raw) {
+  if (!raw) return 'Restaurant';
+  return raw.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+async function detectNearbyRestaurants() {
+  if (!navigator.geolocation) { showToast('Geolocation not supported on this browser'); return; }
+  const btn = document.getElementById('geo-btn');
+  setLoading(btn, true);
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 12000, enableHighAccuracy: true })
+    );
+    const { latitude: lat, longitude: lng } = pos.coords;
+
+    // Overpass API — free, no key, CORS-enabled — restaurants within 500m
+    const q = `[out:json][timeout:15];(node["amenity"~"^(restaurant|fast_food|cafe|food_court|bar)$"](around:800,${lat},${lng});way["amenity"~"^(restaurant|fast_food|cafe|food_court|bar)$"](around:800,${lat},${lng}););out tags center 15;`;
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST', body: q
+    });
+    const data = await res.json();
+
+    const seen = new Set();
+    const restaurants = (data.elements || [])
+      .map(e => ({ name: (e.tags||{}).name, cuisine: (e.tags||{}).cuisine, amenity: (e.tags||{}).amenity || 'restaurant' }))
+      .filter(r => r.name && !seen.has(r.name) && seen.add(r.name))
+      .slice(0, 8);
+
+    renderRestaurantList(restaurants);
+  } catch (err) {
+    if (err.code === 1) showToast('Location permission denied — allow in browser settings');
+    else if (err.code === 2) showToast('Location unavailable — try again outdoors');
+    else showToast('Could not get location. Type the restaurant name below.');
+    // still show the geo section so user can type manually
+    document.getElementById('geo-section').style.display = 'block';
+    document.getElementById('restaurant-list').innerHTML = '';
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function renderRestaurantList(restaurants) {
+  const section = document.getElementById('geo-section');
+  const list    = document.getElementById('restaurant-list');
+  section.style.display = 'block';
+  if (!restaurants.length) {
+    list.innerHTML = `<p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">No restaurants found within 500m. Type the name below.</p>`;
+    return;
+  }
+  list.innerHTML = restaurants.map(r => `
+    <button class="restaurant-item" data-name="${r.name.replace(/"/g,'&quot;')}" data-cuisine="${(r.cuisine||r.amenity||'').replace(/"/g,'&quot;')}">
+      <div class="restaurant-icon">${restaurantEmoji(r.amenity)}</div>
+      <div class="restaurant-info">
+        <div class="restaurant-name">${r.name}</div>
+        <div class="restaurant-cuisine">${formatCuisine(r.cuisine || r.amenity)}</div>
+      </div>
+      <div class="restaurant-arrow">→</div>
+    </button>`).join('');
+
+  list.querySelectorAll('.restaurant-item').forEach(btn =>
+    btn.addEventListener('click', () => refineWithRestaurant(btn.dataset.name, btn.dataset.cuisine))
+  );
+}
+
+async function refineWithRestaurant(restaurantName, cuisine) {
+  if (!pendingResult) return;
+  const settings = getSettings();
+  if (!settings.apiKey) { showToast('Add your API key in Settings to refine with restaurant data'); return; }
+
+  // Highlight selected item
+  document.querySelectorAll('.restaurant-item').forEach(b => b.classList.remove('selected'));
+  const sel = [...document.querySelectorAll('.restaurant-item')].find(b => b.dataset.name === restaurantName);
+  if (sel) sel.classList.add('selected');
+
+  const list = document.getElementById('restaurant-list');
+  const prevHTML = list.innerHTML;
+  list.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--muted);font-size:.82rem;">
+    <div class="spinner light"></div>Matching "${pendingResult.name}" to ${restaurantName}'s menu…</div>`;
+
+  try {
+    const text = await callClaude({
+      model: MODEL, max_tokens: 500,
+      system: `You are a restaurant nutrition expert with comprehensive knowledge of both US and Indian restaurants. For US chains you know exact published nutrition data: McDonald's (Big Mac 550 kcal, McChicken 400 kcal, large fries 490 kcal), Chipotle (burrito bowl ~800-1000 kcal, chicken bowl ~700 kcal), Starbucks (Grande Latte 250 kcal, Frappuccino ~400 kcal), Chick-fil-A (sandwich 440 kcal, nuggets 8pc 260 kcal), Subway (6" Turkey 280 kcal, footlong ~560 kcal), Panera (You Pick Two ~600-900 kcal), Olive Garden (Never Ending Pasta ~900+ kcal), Cheesecake Factory (known for large high-calorie portions), Shake Shack (ShackBurger 500 kcal), Domino's (2 slices pepperoni ~570 kcal), Panda Express (Orange Chicken per serving 490 kcal), Taco Bell (Crunchwrap Supreme 530 kcal), Wendy's (Dave's Single 570 kcal), Burger King (Whopper 657 kcal), Dunkin (Medium Latte 260 kcal), and hundreds more. For Indian chains: Saravana Bhavan, Haldiram's, Barbeque Nation, etc. Use official published nutrition wherever available. Respond ONLY with valid JSON, no prose, no markdown fences.`,
+      messages: [{ role: 'user', content:
+        `The user is at "${restaurantName}" (${formatCuisine(cuisine||'restaurant')}) and ordered something that looks like "${pendingResult.name}" (photo-estimated ${pendingResult.calories} kcal).
+
+Match this to the closest item on ${restaurantName}'s actual menu. Use their published nutrition data if you know it. Account for their specific portion sizes, preparation, and ingredients.
+
+Return ONLY JSON:
+{"name":"exact menu item name at this restaurant","calories":int,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"exact serving size (e.g. 'Large, 16 oz', '2 slices', 'burrito bowl with chicken')","confidence":"low|medium|high","match_note":"one sentence: matched item name + whether calories are higher/lower than photo estimate and why"}`
+      }]
+    }, settings.apiKey);
+
+    let refined;
+    try { refined = JSON.parse(text); }
+    catch { const m = text.match(/\{[\s\S]*\}/); if (m) refined = JSON.parse(m[0]); else throw new Error('parse'); }
+
+    refined.restaurant = restaurantName;
+    const note = refined.match_note || '';
+    delete refined.match_note;
+
+    baseResult = { ...refined };
+    pendingResult = { ...refined };
+    portionMult = 1;
+    const sl = document.getElementById('portion-slider');
+    if (sl) sl.value = 1;
+
+    renderAnalysisResult(refined);
+
+    // Show green restaurant badge
+    const badge = document.getElementById('restaurant-badge');
+    badge.innerHTML = `📍 ${restaurantName}${note ? ' · ' + note : ''}`;
+    badge.style.display = 'flex';
+
+    document.getElementById('geo-section').style.display = 'none';
+    showToast(`Updated for ${restaurantName}!`, false);
+
+  } catch {
+    list.innerHTML = prevHTML;
+    // reattach listeners
+    document.querySelectorAll('.restaurant-item').forEach(btn =>
+      btn.addEventListener('click', () => refineWithRestaurant(btn.dataset.name, btn.dataset.cuisine))
+    );
+    showToast('Could not match menu item — try a different restaurant');
+  }
+}
+
+// ── Recipe ─────────────────────────────────────────────
+let recipePlainText = '';   // for copy button
+
+async function fetchAndShowRecipe(foodName) {
+  if (!foodName) return;
+  openRecipeModal(foodName, null, 'loading');
+
+  // 1. Try TheMealDB (free, no key, CORS-ok)
+  try {
+    const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(foodName)}`);
+    const data = await res.json();
+    if (data.meals && data.meals.length) {
+      const m = data.meals[0];
+      const ingredients = [];
+      for (let i = 1; i <= 20; i++) {
+        const ing = m[`strIngredient${i}`], meas = m[`strMeasure${i}`];
+        if (ing && ing.trim()) ingredients.push({ ingredient: ing.trim(), measure: (meas || '').trim() });
+      }
+      const recipe = { name: m.strMeal, source: 'TheMealDB', ingredients, instructions: m.strInstructions || '' };
+      openRecipeModal(foodName, recipe, 'done');
+      return;
+    }
+  } catch {}
+
+  // 2. Fall back to Claude AI
+  const settings = getSettings();
+  if (!settings.apiKey) { openRecipeModal(foodName, null, 'no-key'); return; }
+  try {
+    const text = await callClaude({
+      model: MODEL, max_tokens: 900,
+      system: 'You are a recipe expert specialising in Indian home cooking. Respond ONLY with valid JSON, no prose, no markdown fences.',
+      messages: [{ role: 'user', content: `Give me a simple home recipe for: "${foodName}". Return ONLY JSON:\n{"name":"dish name","ingredients":[{"measure":"qty","ingredient":"name"}],"instructions":"step by step instructions as a single string with newlines between steps"}` }]
+    }, settings.apiKey);
+    let recipe;
+    try { recipe = JSON.parse(text); } catch { const m = text.match(/\{[\s\S]*\}/); if (m) recipe = JSON.parse(m[0]); else throw new Error(); }
+    recipe.source = 'AI Generated';
+    openRecipeModal(foodName, recipe, 'done');
+  } catch {
+    openRecipeModal(foodName, null, 'error');
+  }
+}
+
+function openRecipeModal(foodName, recipe, state) {
+  const overlay = document.getElementById('recipe-modal-overlay');
+  const title   = document.getElementById('recipe-modal-title');
+  const source  = document.getElementById('recipe-modal-source');
+  const body    = document.getElementById('recipe-modal-body');
+
+  title.textContent = recipe ? recipe.name : foodName;
+
+  if (state === 'loading') {
+    source.textContent = '';
+    body.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:.88rem;"><div class="spinner light"></div> Fetching recipe…</div>`;
+    recipePlainText = '';
+  } else if (state === 'no-key') {
+    source.textContent = '';
+    body.innerHTML = `<p style="color:var(--muted);font-size:.88rem;">Add your API key in Settings to generate recipes with AI.</p>`;
+  } else if (state === 'error') {
+    source.textContent = '';
+    body.innerHTML = `<p style="color:var(--muted);font-size:.88rem;">Couldn't find a recipe. Try editing the food name and searching again.</p>`;
+  } else {
+    source.textContent = `Source: ${recipe.source}`;
+    const ingHTML = recipe.ingredients.map(i =>
+      `<li><span class="recipe-measure">${i.measure}</span>${i.ingredient}</li>`
+    ).join('');
+    body.innerHTML = `
+      <div class="recipe-section">Ingredients</div>
+      <ul class="recipe-ingredients">${ingHTML}</ul>
+      <div class="recipe-section">Instructions</div>
+      <div class="recipe-steps">${recipe.instructions.replace(/\n/g,'<br>')}</div>`;
+
+    // Build plain text for copy
+    recipePlainText = `${recipe.name}\n\nIngredients:\n` +
+      recipe.ingredients.map(i => `${i.measure} ${i.ingredient}`).join('\n') +
+      `\n\nInstructions:\n${recipe.instructions}`;
+  }
+
+  overlay.classList.add('open');
+}
+
+function closeRecipeModal() {
+  document.getElementById('recipe-modal-overlay').classList.remove('open');
+}
+
 // ── Rendering ──────────────────────────────────────────
 function renderAnalysisResult(r) {
+  baseResult = { ...r };   // store unscaled base
+  portionMult = 1;
+  const slider = document.getElementById('portion-slider');
+  if (slider) slider.value = 1;
+  document.getElementById('portion-display').textContent = '1×';
   document.getElementById('r-name').textContent = r.name || 'Unknown food';
   document.getElementById('r-serving').textContent = r.serving_note || '';
   document.getElementById('r-cals').textContent = r.calories || 0;
@@ -949,9 +1612,13 @@ function logCurrentEntry() {
     serving_note: pendingResult.serving_note, confidence: pendingResult.confidence
   };
   saveEntry(entry);
-  clearImage(); pendingResult = null;
+  clearImage(); pendingResult = null; baseResult = null; portionMult = 1;
   if (navigator.vibrate) navigator.vibrate(30);
-  showToast('Entry logged!', false);
+  if (!isInEatingWindow(entry.timestamp)) {
+    showToast('⚠️ Logged outside your eating window (12 PM–8 PM)');
+  } else {
+    showToast('Entry logged!', false);
+  }
   switchTab('log');
 }
 
@@ -965,8 +1632,11 @@ function logQuickAdd(food) {
 let logCurrentDate = todayStr();
 
 function renderLogScreen() {
+  const isToday = logCurrentDate >= todayStr();
   document.getElementById('log-date-label').textContent = formatDateLabel(logCurrentDate);
-  document.getElementById('log-next').disabled = logCurrentDate >= todayStr();
+  document.getElementById('log-next').disabled = isToday;
+  document.getElementById('today-btn').classList.toggle('visible', !isToday);
+  renderIFCard();
   renderLogList(logCurrentDate);
 }
 
@@ -989,7 +1659,8 @@ function renderLogList(ds) {
         : `<div class="entry-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.6rem;">🍽️</div>`}
       <div class="entry-info">
         <div class="entry-name">${e.name}</div>
-        <div class="entry-time">${formatTime(e.timestamp)}</div>
+        <div class="entry-time">${formatDateTime(e.timestamp)}</div>
+        ${!isInEatingWindow(e.timestamp) ? `<div class="entry-outside-win">⚠️ Outside eating window</div>` : ''}
         <div class="macros">
           <span class="mpill cal">${e.calories} kcal</span>
           <span class="mpill protein">P ${e.protein_g}g</span>
@@ -1140,18 +1811,29 @@ function switchTab(name) {
   document.getElementById('screen-' + name).classList.add('active');
   document.querySelector(`.tab-btn[data-tab="${name}"]`).classList.add('active');
   if (name === 'log')    renderLogScreen();
-  if (name === 'stats')  renderStatsScreen();
+  if (name === 'stats')  { renderStatsScreen(); checkWeeklyReport(); }
   if (name === 'advice') renderAdviceScreen();
   if (name === 'analyze') showQuickAdd();
 }
 
 function openSettings() {
   const s = getSettings();
-  document.getElementById('s-apikey').value  = s.apiKey || '';
-  document.getElementById('s-cals').value    = s.dailyCalorieGoal;
-  document.getElementById('s-protein').value = s.proteinGoal_g;
-  document.getElementById('s-carbs').value   = s.carbsGoal_g;
-  document.getElementById('s-fat').value     = s.fatGoal_g;
+  document.getElementById('s-apikey').value   = s.apiKey || '';
+  document.getElementById('s-cals').value     = s.dailyCalorieGoal;
+  document.getElementById('s-protein').value  = s.proteinGoal_g;
+  document.getElementById('s-carbs').value    = s.carbsGoal_g;
+  document.getElementById('s-fat').value      = s.fatGoal_g;
+  document.getElementById('s-if-start').value  = String(s.ifStart).padStart(2,'0') + ':00';
+  document.getElementById('s-if-end').value    = String(s.ifEnd).padStart(2,'0') + ':00';
+  const tzSel = document.getElementById('s-timezone');
+  const tz = s.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // select matching option, or append a custom one if not in list
+  if ([...tzSel.options].some(o => o.value === tz)) {
+    tzSel.value = tz;
+  } else {
+    const opt = document.createElement('option');
+    opt.value = tz; opt.textContent = tz; tzSel.prepend(opt); tzSel.value = tz;
+  }
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeSettings() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -1163,8 +1845,12 @@ function saveSettingsFromForm() {
     dailyCalorieGoal: parseInt(document.getElementById('s-cals').value)    || 2000,
     proteinGoal_g:    parseInt(document.getElementById('s-protein').value) || 150,
     carbsGoal_g:      parseInt(document.getElementById('s-carbs').value)   || 200,
-    fatGoal_g:        parseInt(document.getElementById('s-fat').value)     || 65
+    fatGoal_g:        parseInt(document.getElementById('s-fat').value)     || 65,
+    ifStart:  parseInt((document.getElementById('s-if-start').value || '12:00').split(':')[0]),
+    ifEnd:    parseInt((document.getElementById('s-if-end').value   || '20:00').split(':')[0]),
+    timezone: document.getElementById('s-timezone').value || Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
+  renderIFCard();
   closeSettings();
   showToast('Settings saved!', false);
 }
@@ -1182,6 +1868,9 @@ document.addEventListener('DOMContentLoaded', () => {
   fileInput.addEventListener('change', handleFileSelect);
   document.getElementById('clear-image').addEventListener('click', clearImage);
 
+  // Portion slider
+  document.getElementById('portion-slider').addEventListener('input', e => applyPortion(parseFloat(e.target.value)));
+
   // Analyze
   document.getElementById('analyze-btn').addEventListener('click', analyzeFood);
 
@@ -1189,6 +1878,33 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('log-entry-btn').addEventListener('click', logCurrentEntry);
   document.getElementById('edit-result-btn').addEventListener('click', openEditMode);
   document.getElementById('cancel-edit-btn').addEventListener('click', closeEditMode);
+  document.getElementById('recipe-btn').addEventListener('click', () => {
+    if (pendingResult) fetchAndShowRecipe(pendingResult.name);
+  });
+
+  // Nearby restaurant
+  document.getElementById('geo-btn').addEventListener('click', detectNearbyRestaurants);
+  document.getElementById('geo-close').addEventListener('click', () => {
+    document.getElementById('geo-section').style.display = 'none';
+  });
+  document.getElementById('manual-restaurant-btn').addEventListener('click', () => {
+    const name = document.getElementById('manual-restaurant').value.trim();
+    if (name) refineWithRestaurant(name, '');
+  });
+  document.getElementById('manual-restaurant').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const name = document.getElementById('manual-restaurant').value.trim();
+      if (name) refineWithRestaurant(name, '');
+    }
+  });
+
+  // Recipe modal
+  document.getElementById('recipe-close-btn').addEventListener('click', closeRecipeModal);
+  document.getElementById('recipe-modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('recipe-modal-overlay')) closeRecipeModal(); });
+  document.getElementById('recipe-copy-btn').addEventListener('click', () => {
+    if (!recipePlainText) return;
+    navigator.clipboard.writeText(recipePlainText).then(() => showToast('Recipe copied!', false)).catch(() => showToast('Copy failed'));
+  });
 
   // Edit form
   document.getElementById('lookup-btn').addEventListener('click', lookupNutritionByName);
@@ -1206,11 +1922,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
   });
 
-  // Quick-add chips (event delegation)
+  // Quick-add rows (event delegation)
   document.getElementById('quick-add-chips').addEventListener('click', e => {
-    const chip = e.target.closest('.food-chip');
-    if (!chip) return;
-    try { logQuickAdd(JSON.parse(chip.dataset.food)); } catch {}
+    const row = e.target.closest('.quick-row');
+    if (!row) return;
+    try { logQuickAdd(JSON.parse(row.dataset.food)); } catch {}
   });
 
   // Log date nav
@@ -1221,6 +1937,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('log-next').addEventListener('click', () => {
     const next = new Date(new Date(logCurrentDate + 'T12:00:00').getTime() + 86400000);
     if (dateStr(next) <= todayStr()) { logCurrentDate = dateStr(next); renderLogScreen(); }
+  });
+  document.getElementById('today-btn').addEventListener('click', () => {
+    logCurrentDate = todayStr(); renderLogScreen();
   });
 
   // Log delete (delegation)
@@ -1260,6 +1979,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show initial quick-add
   showQuickAdd();
+
+  // IF card: initial render + live countdown update every 60s
+  renderIFCard();
+  setInterval(renderIFCard, 60000);
 });
 </script>
 </body>

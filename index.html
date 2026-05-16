@@ -438,6 +438,24 @@ header {
 input[type=range].portion-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
 input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: 0 0 8px rgba(245,166,35,.45); }
 
+/* ── Nearby Restaurant ── */
+.geo-trigger { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.geo-trigger-label { font-size: .72rem; color: var(--muted); }
+.geo-btn { background: none; border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: .72rem; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .2s; white-space: nowrap; }
+.geo-btn:hover { border-color: var(--primary); color: var(--primary); }
+#geo-section { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.geo-section-label { font-size: .68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.geo-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; padding: 0; }
+.restaurant-item { width: 100%; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 7px; display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; transition: all .18s; }
+.restaurant-item:hover, .restaurant-item.selected { border-color: var(--primary); background: rgba(245,166,35,.07); }
+.restaurant-icon { font-size: 1.3rem; flex-shrink: 0; }
+.restaurant-info { flex: 1; min-width: 0; }
+.restaurant-name { font-size: .85rem; font-weight: 700; }
+.restaurant-cuisine { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+.restaurant-arrow { color: var(--muted); font-size: .9rem; }
+.restaurant-badge { display: flex; align-items: center; gap: 8px; background: rgba(39,174,96,.1); border: 1px solid rgba(39,174,96,.3); border-radius: 20px; padding: 5px 12px; margin-bottom: 10px; font-size: .72rem; font-weight: 700; color: #27ae60; }
+.geo-manual-row { display: flex; gap: 8px; margin-top: 8px; }
+
 /* ── Weekly Report ── */
 .weekly-card { background: linear-gradient(135deg, rgba(245,166,35,.08) 0%, var(--card) 100%); border: 1px solid rgba(245,166,35,.3); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; animation: slideUp .3s ease; }
 .weekly-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
@@ -511,6 +529,26 @@ input[type=range].portion-slider::-webkit-slider-thumb { -webkit-appearance: non
             <button class="btn btn-ghost" id="edit-result-btn">✏️ Edit</button>
             <button class="btn btn-ghost" id="recipe-btn"><span class="btn-text">🍳 Recipe</span></button>
             <button class="btn btn-primary" id="log-entry-btn"><span class="btn-text">📋 Log</span></button>
+          </div>
+
+          <!-- Restaurant detection -->
+          <div id="restaurant-badge" style="display:none;" class="restaurant-badge"></div>
+          <div class="geo-trigger">
+            <span class="geo-trigger-label">At a restaurant?</span>
+            <button class="geo-btn" id="geo-btn">
+              <span class="btn-text">📍 Detect nearby</span>
+            </button>
+          </div>
+          <div id="geo-section" style="display:none;">
+            <div class="geo-section-label">
+              <span>Nearby restaurants</span>
+              <button class="geo-close" id="geo-close">✕</button>
+            </div>
+            <div id="restaurant-list"></div>
+            <div class="geo-manual-row">
+              <input class="edit-field" id="manual-restaurant" type="text" placeholder="Or type restaurant name…" style="margin-bottom:0;flex:1;">
+              <button class="btn btn-secondary btn-sm" id="manual-restaurant-btn" style="flex-shrink:0;"><span class="btn-text">→</span></button>
+            </div>
           </div>
         </div>
 
@@ -1075,11 +1113,13 @@ function handleFileSelect(e) {
 }
 
 function clearImage() {
-  pendingImage = null; pendingResult = null;
+  pendingImage = null; pendingResult = null; baseResult = null; portionMult = 1;
   document.getElementById('preview-wrap').style.display = 'none';
   document.getElementById('upload-area').style.display = 'block';
   document.getElementById('analyze-btn').disabled = true;
   document.getElementById('result-card').style.display = 'none';
+  document.getElementById('geo-section').style.display = 'none';
+  document.getElementById('restaurant-badge').style.display = 'none';
   showQuickAdd();
 }
 
@@ -1297,6 +1337,137 @@ function buildLogSummary(entries, settings) {
   return Object.entries(byDay).sort(([a],[b]) => a < b ? 1 : -1).map(([date, d]) =>
     `${formatDateLabel(date)}: ${Math.round(d.cals)} kcal | P:${Math.round(d.protein)}g C:${Math.round(d.carbs)}g F:${Math.round(d.fat)}g | ${d.foods.slice(0,4).join(', ')}`
   ).join('\n');
+}
+
+// ── Nearby Restaurant ──────────────────────────────────
+function restaurantEmoji(amenity) {
+  return amenity === 'cafe' ? '☕' : amenity === 'fast_food' ? '🍟' : amenity === 'food_court' ? '🏬' : '🍽️';
+}
+function formatCuisine(raw) {
+  if (!raw) return 'Restaurant';
+  return raw.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+async function detectNearbyRestaurants() {
+  if (!navigator.geolocation) { showToast('Geolocation not supported on this browser'); return; }
+  const btn = document.getElementById('geo-btn');
+  setLoading(btn, true);
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 12000, enableHighAccuracy: true })
+    );
+    const { latitude: lat, longitude: lng } = pos.coords;
+
+    // Overpass API — free, no key, CORS-enabled — restaurants within 500m
+    const q = `[out:json][timeout:15];(node["amenity"~"^(restaurant|fast_food|cafe|food_court)$"](around:500,${lat},${lng});way["amenity"~"^(restaurant|fast_food|cafe|food_court)$"](around:500,${lat},${lng}););out tags center 12;`;
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST', body: q
+    });
+    const data = await res.json();
+
+    const seen = new Set();
+    const restaurants = (data.elements || [])
+      .map(e => ({ name: (e.tags||{}).name, cuisine: (e.tags||{}).cuisine, amenity: (e.tags||{}).amenity || 'restaurant' }))
+      .filter(r => r.name && !seen.has(r.name) && seen.add(r.name))
+      .slice(0, 8);
+
+    renderRestaurantList(restaurants);
+  } catch (err) {
+    if (err.code === 1) showToast('Location permission denied — allow in browser settings');
+    else if (err.code === 2) showToast('Location unavailable — try again outdoors');
+    else showToast('Could not get location. Type the restaurant name below.');
+    // still show the geo section so user can type manually
+    document.getElementById('geo-section').style.display = 'block';
+    document.getElementById('restaurant-list').innerHTML = '';
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function renderRestaurantList(restaurants) {
+  const section = document.getElementById('geo-section');
+  const list    = document.getElementById('restaurant-list');
+  section.style.display = 'block';
+  if (!restaurants.length) {
+    list.innerHTML = `<p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">No restaurants found within 500m. Type the name below.</p>`;
+    return;
+  }
+  list.innerHTML = restaurants.map(r => `
+    <button class="restaurant-item" data-name="${r.name.replace(/"/g,'&quot;')}" data-cuisine="${(r.cuisine||r.amenity||'').replace(/"/g,'&quot;')}">
+      <div class="restaurant-icon">${restaurantEmoji(r.amenity)}</div>
+      <div class="restaurant-info">
+        <div class="restaurant-name">${r.name}</div>
+        <div class="restaurant-cuisine">${formatCuisine(r.cuisine || r.amenity)}</div>
+      </div>
+      <div class="restaurant-arrow">→</div>
+    </button>`).join('');
+
+  list.querySelectorAll('.restaurant-item').forEach(btn =>
+    btn.addEventListener('click', () => refineWithRestaurant(btn.dataset.name, btn.dataset.cuisine))
+  );
+}
+
+async function refineWithRestaurant(restaurantName, cuisine) {
+  if (!pendingResult) return;
+  const settings = getSettings();
+  if (!settings.apiKey) { showToast('Add your API key in Settings to refine with restaurant data'); return; }
+
+  // Highlight selected item
+  document.querySelectorAll('.restaurant-item').forEach(b => b.classList.remove('selected'));
+  const sel = [...document.querySelectorAll('.restaurant-item')].find(b => b.dataset.name === restaurantName);
+  if (sel) sel.classList.add('selected');
+
+  const list = document.getElementById('restaurant-list');
+  const prevHTML = list.innerHTML;
+  list.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--muted);font-size:.82rem;">
+    <div class="spinner light"></div>Matching "${pendingResult.name}" to ${restaurantName}'s menu…</div>`;
+
+  try {
+    const text = await callClaude({
+      model: MODEL, max_tokens: 500,
+      system: 'You are a restaurant nutrition expert. Respond ONLY with valid JSON, no prose, no markdown fences.',
+      messages: [{ role: 'user', content:
+        `The user is at "${restaurantName}" (${formatCuisine(cuisine||'restaurant')} restaurant) and ordered something that looks like "${pendingResult.name}" (${pendingResult.calories} kcal estimated from a photo).
+
+Identify the closest matching menu item at this restaurant and provide accurate nutrition for that specific restaurant's version (accounting for their portion sizes, preparation style, ingredients).
+
+Return ONLY JSON:
+{"name":"exact or closest menu item name","calories":int,"protein_g":float,"carbs_g":float,"fat_g":float,"serving_note":"serving size at this restaurant","confidence":"low|medium|high","match_note":"one sentence: what matched and any key difference in calories/portions"}`
+      }]
+    }, settings.apiKey);
+
+    let refined;
+    try { refined = JSON.parse(text); }
+    catch { const m = text.match(/\{[\s\S]*\}/); if (m) refined = JSON.parse(m[0]); else throw new Error('parse'); }
+
+    refined.restaurant = restaurantName;
+    const note = refined.match_note || '';
+    delete refined.match_note;
+
+    baseResult = { ...refined };
+    pendingResult = { ...refined };
+    portionMult = 1;
+    const sl = document.getElementById('portion-slider');
+    if (sl) sl.value = 1;
+
+    renderAnalysisResult(refined);
+
+    // Show green restaurant badge
+    const badge = document.getElementById('restaurant-badge');
+    badge.innerHTML = `📍 ${restaurantName}${note ? ' · ' + note : ''}`;
+    badge.style.display = 'flex';
+
+    document.getElementById('geo-section').style.display = 'none';
+    showToast(`Updated for ${restaurantName}!`, false);
+
+  } catch {
+    list.innerHTML = prevHTML;
+    // reattach listeners
+    document.querySelectorAll('.restaurant-item').forEach(btn =>
+      btn.addEventListener('click', () => refineWithRestaurant(btn.dataset.name, btn.dataset.cuisine))
+    );
+    showToast('Could not match menu item — try a different restaurant');
+  }
 }
 
 // ── Recipe ─────────────────────────────────────────────
@@ -1709,6 +1880,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cancel-edit-btn').addEventListener('click', closeEditMode);
   document.getElementById('recipe-btn').addEventListener('click', () => {
     if (pendingResult) fetchAndShowRecipe(pendingResult.name);
+  });
+
+  // Nearby restaurant
+  document.getElementById('geo-btn').addEventListener('click', detectNearbyRestaurants);
+  document.getElementById('geo-close').addEventListener('click', () => {
+    document.getElementById('geo-section').style.display = 'none';
+  });
+  document.getElementById('manual-restaurant-btn').addEventListener('click', () => {
+    const name = document.getElementById('manual-restaurant').value.trim();
+    if (name) refineWithRestaurant(name, '');
+  });
+  document.getElementById('manual-restaurant').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const name = document.getElementById('manual-restaurant').value.trim();
+      if (name) refineWithRestaurant(name, '');
+    }
   });
 
   // Recipe modal
